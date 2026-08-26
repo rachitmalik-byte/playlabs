@@ -9,7 +9,7 @@ export const missions: Mission[] = [
     concepts: ['material', 'natural_material', 'synthetic_material'],
     isCompleted: false,
     isUnlocked: true,
-    route: '/missions/origins'
+    route: '/play/origins'
   },
   {
     id: 'fibres',
@@ -19,7 +19,7 @@ export const missions: Mission[] = [
     concepts: ['fibre', 'nylon', 'polyester', 'rayon', 'acrylic'],
     isCompleted: false,
     isUnlocked: false,
-    route: '/missions/fibres'
+    route: '/play/fibres'
   },
   {
     id: 'experiments',
@@ -29,7 +29,7 @@ export const missions: Mission[] = [
     concepts: ['plastic_properties', 'heat_conductor', 'heat_insulator', 'electrical_conductor', 'electrical_insulator'],
     isCompleted: false,
     isUnlocked: false,
-    route: '/missions/experiments'
+    route: '/play/experiments'
   },
   {
     id: 'safety',
@@ -39,7 +39,7 @@ export const missions: Mission[] = [
     concepts: ['plastic_safety'],
     isCompleted: false,
     isUnlocked: false,
-    route: '/missions/safety'
+    route: '/play/safety'
   },
   {
     id: 'plastic',
@@ -49,7 +49,7 @@ export const missions: Mission[] = [
     concepts: ['synthetic_rubber', 'synthetic_adhesive', 'non_biodegradable'],
     isCompleted: false,
     isUnlocked: false,
-    route: '/missions/plastic'
+    route: '/play/plastic'
   },
   {
     id: 'environment',
@@ -59,26 +59,26 @@ export const missions: Mission[] = [
     concepts: ['environmental_impact'],
     isCompleted: false,
     isUnlocked: false,
-    route: '/missions/environment'
+    route: '/play/environment'
   },
   {
     id: 'extras',
-    title: 'Mission 7: Bonus Discoveries',
-    subtitle: 'Extra facts for true scientists.',
+    title: 'Mission 7: Rubber & Glue Lab',
+    subtitle: 'Synthetic rubber and adhesives.',
     icon: '⭐',
     concepts: [],
     isCompleted: false,
     isUnlocked: false,
-    route: '/missions/extras'
+    route: '/play/extras'
   },
   {
     id: 'final-mission',
-    title: 'The Final Exam',
+    title: 'Mission 8: Pip\'s Safe Camp',
     subtitle: 'Prove your materials mastery!',
     icon: '🎓',
     concepts: [],
     isCompleted: false,
     isUnlocked: false,
-    route: '/missions/final'
+    route: '/play/final-mission'
   }
 ];

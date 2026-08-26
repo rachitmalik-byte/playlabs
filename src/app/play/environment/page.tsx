@@ -1,8 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { ArrowRight, ArrowLeft, RotateCcw, Sparkles, CheckCircle2, Lock, Lightbulb } from 'lucide-react';
+import { KidTermTooltip } from '@/components/learning/KidTermTooltip';
+import { SentenceVoiceReader } from '@/components/learning/SentenceVoiceReader';
+import { ParentPinGateModal } from '@/components/learning/ParentPinGateModal';
+import { logChildAttempt } from '@/lib/learning-engine';
+import { playDiscoverySound, playPopSound, playClickSound, speak } from '@/lib/audio-manager';
 
 const STAGES = [
   { days: 1, label: 'Day 1' },
@@ -16,6 +23,10 @@ const STAGES = [
 
 export default function EnvironmentMission() {
   const [sliderIndex, setSliderIndex] = useState(0);
+  const [hasReached100, setHasReached100] = useState(false);
+  const [showPinGate, setShowPinGate] = useState(false);
+  const router = useRouter();
+
   const currentStage = STAGES[sliderIndex];
 
   // Helper to determine visual state based on days
@@ -27,160 +38,252 @@ export default function EnvironmentMission() {
 
   const is100Years = sliderIndex === STAGES.length - 1;
 
-  return (
-    <div className="min-h-screen bg-lab-chalk font-nunito p-8 flex flex-col">
-      <header className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-text-dark font-mono">Mission: The Soil Journey</h1>
-        <div className="bg-white px-4 py-2 rounded-full shadow-sm font-mono font-bold text-pip-blue border border-pip-blue/30">
-          Time Passed: {currentStage.label}
-        </div>
-      </header>
+  const handleSliderChange = (newIdx: number) => {
+    playPopSound();
+    setSliderIndex(newIdx);
+    if (newIdx === STAGES.length - 1) {
+      setHasReached100(true);
+      playDiscoverySound();
+      speak("Look closely! After 100 years, natural apple and cotton are completely gone. But the synthetic plastic bottle is 100% unchanged! Plastic is non-biodegradable.");
+      logChildAttempt('non_biodegradable', true, 'Observed 100-year biodegradation difference between natural vs plastic', 'environment');
+    }
+  };
 
-      <main className="flex-1 flex flex-col items-center">
-        {/* Pip Intro / Reaction */}
-        <div className="flex items-end gap-4 mb-6 max-w-3xl w-full">
-          <div className="w-16 h-16 bg-nature-green rounded-full flex items-center justify-center text-3xl shadow-md border-4 border-white shrink-0 text-white font-bold">
-            🌱
+  const handleReset = () => {
+    playPopSound();
+    setSliderIndex(0);
+    speak("Time machine reset to Day 1! Drag the slider across 100 years to watch decomposition!");
+  };
+
+  const handleNextClick = () => {
+    if (!hasReached100) {
+      playPopSound();
+      setShowPinGate(true);
+    } else {
+      playClickSound();
+      router.push("/play/extras");
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-lab-chalk font-nunito p-6 sm:p-8 flex flex-col justify-between">
+      <div className="max-w-4xl mx-auto w-full flex-1 flex flex-col">
+        {/* Header */}
+        <header className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6 bg-white p-4 rounded-2xl border-2 border-lab-wood/20 shadow-xs">
+          <div className="flex items-center gap-3">
+            <Link
+              href="/play/plastic"
+              onClick={() => playClickSound()}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-lab-chalk hover:bg-lab-warm text-text-dark font-extrabold text-xs border border-lab-wood/20 shadow-xs transition-all"
+            >
+              <ArrowLeft size={14} />
+              <span>← Mission 5 (Plastic)</span>
+            </Link>
+
+            <div>
+              <span className="text-[10px] font-black text-pip-blue uppercase tracking-wider block">
+                Chapter 3 • Environmental Science
+              </span>
+              <h1 className="text-base sm:text-lg font-black text-text-dark">
+                Mission 6: Underground 100-Year Time Journey
+              </h1>
+            </div>
           </div>
-          <div className="speech-bubble bg-white p-4 rounded-2xl rounded-bl-none shadow-sm border border-lab-wood-light flex-1">
-            <p className="text-text-dark font-medium text-lg">
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleReset}
+              className="px-3.5 py-1.5 rounded-xl bg-lab-chalk hover:bg-lab-warm text-text-dark font-extrabold text-xs border border-lab-wood/20 shadow-xs transition-all flex items-center gap-1"
+              title="Reset Time Machine"
+            >
+              <RotateCcw size={13} />
+              <span>Reset Time 🔄</span>
+            </button>
+
+            <span className="bg-pip-blue/10 text-pip-blue-dark font-mono font-black text-xs px-3.5 py-1.5 rounded-xl border border-pip-blue/30">
+              ⏳ {currentStage.label}
+            </span>
+          </div>
+        </header>
+
+        <main className="flex-1 flex flex-col items-center">
+          {/* Pip Dialogue */}
+          <div className="speech-bubble bg-white p-5 rounded-2xl shadow-soft border-2 border-lab-wood/30 mb-6 w-full text-center">
+            <p className="text-base sm:text-lg font-extrabold text-text-dark">
               {is100Years 
-                ? "Oh no! After 100 years, the apple, cotton, and jute have returned to nature. But look at the plastic bottle—it's still there! Plastics are non-biodegradable." 
-                : "Let's bury some items and travel through time. Drag the slider to see what happens to them underground!"}
+                ? "😱 The plastic bottle is STILL THERE after 100 years! Bacteria cannot digest synthetic polymers." 
+                : "Pip says: 'Bury these items in the soil and drag the time slider to travel 100 years into the future!'"}
             </p>
           </div>
-        </div>
 
-        {/* Underground Cross-Section */}
-        <div className="w-full max-w-5xl flex-1 bg-earth-brown rounded-3xl overflow-hidden relative shadow-inner border-t-8 border-nature-green min-h-[400px]">
-          {/* Grass top */}
-          <div className="absolute top-0 left-0 right-0 h-4 bg-nature-green-light z-20 opacity-50"></div>
-          
-          {/* Dirt texture pattern (simple CSS representation) */}
-          <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#4a3821 2px, transparent 2px)', backgroundSize: '30px 30px' }}></div>
-          
-          <div className="grid grid-cols-4 h-full pt-16 pb-8 px-8 gap-4 relative z-10">
-            {/* Apple */}
-            <div className="flex flex-col items-center justify-start h-full gap-4">
-              <div className="bg-white/10 px-3 py-1 rounded-full text-white/80 font-bold text-sm mb-4">Apple Core</div>
-              <div className="relative w-32 h-32 flex items-center justify-center">
-                <motion.div 
-                  className="text-6xl absolute"
-                  animate={getDecompState(currentStage.days, 60)} // ~2 months
-                >
-                  🍎
-                </motion.div>
-                <motion.div 
-                  className="text-5xl absolute text-brown-900"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: getDecompState(currentStage.days, 60).showSoil ? 1 : 0 }}
-                >
-                  🪴
-                </motion.div>
-              </div>
+          {/* Underground Soil Box */}
+          <div className="w-full bg-[#3d2b1f] rounded-3xl overflow-hidden relative shadow-inner border-t-8 border-nature-green p-6 min-h-[360px] flex flex-col justify-between">
+            {/* Top Grass line */}
+            <div className="flex justify-between items-center text-xs font-bold text-nature-green-light mb-4">
+              <span>🌱 Top Soil & Grass Level</span>
+              <span>Earth Cross-Section 🪱</span>
             </div>
 
-            {/* Cotton */}
-            <div className="flex flex-col items-center justify-start h-full gap-4">
-              <div className="bg-white/10 px-3 py-1 rounded-full text-white/80 font-bold text-sm mb-4">Cotton Cloth</div>
-              <div className="relative w-32 h-32 flex items-center justify-center">
-                <motion.div 
-                  className="text-6xl absolute"
-                  animate={getDecompState(currentStage.days, 180)} // 6 months
-                >
-                  👕
-                </motion.div>
-                <motion.div 
-                  className="text-5xl absolute text-brown-900"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: getDecompState(currentStage.days, 180).showSoil ? 1 : 0 }}
-                >
-                  🪴
-                </motion.div>
+            {/* Buried Items Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 relative z-10 my-auto">
+              
+              {/* Apple */}
+              <div className="flex flex-col items-center p-3 rounded-2xl bg-black/20 border border-white/10 text-center">
+                <span className="text-xs font-black text-white/90 mb-2">Apple Core</span>
+                <div className="w-20 h-20 flex items-center justify-center relative">
+                  <motion.span 
+                    className="text-5xl absolute"
+                    animate={getDecompState(currentStage.days, 60)}
+                  >
+                    🍎
+                  </motion.span>
+                  <motion.span 
+                    className="text-4xl absolute"
+                    animate={{ opacity: getDecompState(currentStage.days, 60).showSoil ? 1 : 0 }}
+                  >
+                    🪴
+                  </motion.span>
+                </div>
+                <span className="text-[10px] font-bold text-amber-200 mt-2">
+                  {currentStage.days >= 60 ? "✓ Decomposed into soil!" : "Decomposing..."}
+                </span>
               </div>
+
+              {/* Cotton Cloth */}
+              <div className="flex flex-col items-center p-3 rounded-2xl bg-black/20 border border-white/10 text-center">
+                <span className="text-xs font-black text-white/90 mb-2">Cotton Cloth</span>
+                <div className="w-20 h-20 flex items-center justify-center relative">
+                  <motion.span 
+                    className="text-5xl absolute"
+                    animate={getDecompState(currentStage.days, 180)}
+                  >
+                    👕
+                  </motion.span>
+                  <motion.span 
+                    className="text-4xl absolute"
+                    animate={{ opacity: getDecompState(currentStage.days, 180).showSoil ? 1 : 0 }}
+                  >
+                    🪴
+                  </motion.span>
+                </div>
+                <span className="text-[10px] font-bold text-amber-200 mt-2">
+                  {currentStage.days >= 180 ? "✓ Decomposed into soil!" : "Decomposing..."}
+                </span>
+              </div>
+
+              {/* Jute Bag */}
+              <div className="flex flex-col items-center p-3 rounded-2xl bg-black/20 border border-white/10 text-center">
+                <span className="text-xs font-black text-white/90 mb-2">Jute Bag</span>
+                <div className="w-20 h-20 flex items-center justify-center relative">
+                  <motion.span 
+                    className="text-5xl absolute"
+                    animate={getDecompState(currentStage.days, 365)}
+                  >
+                    🛍️
+                  </motion.span>
+                  <motion.span 
+                    className="text-4xl absolute"
+                    animate={{ opacity: getDecompState(currentStage.days, 365).showSoil ? 1 : 0 }}
+                  >
+                    🪴
+                  </motion.span>
+                </div>
+                <span className="text-[10px] font-bold text-amber-200 mt-2">
+                  {currentStage.days >= 365 ? "✓ Decomposed into soil!" : "Decomposing..."}
+                </span>
+              </div>
+
+              {/* Plastic Bottle (Dramatic) */}
+              <div className="flex flex-col items-center p-3 rounded-2xl bg-black/30 border-2 border-fire-red/50 text-center">
+                <span className="text-xs font-black text-white mb-2">Plastic Bottle</span>
+                <div className="w-20 h-20 flex items-center justify-center relative">
+                  <motion.span 
+                    className="text-5xl"
+                    animate={{ scale: is100Years ? [1, 1.1, 1] : 1 }}
+                    transition={{ repeat: is100Years ? Infinity : 0, duration: 1.5 }}
+                  >
+                    🧴
+                  </motion.span>
+                </div>
+                <span className="text-[10px] font-black text-fire-red bg-white px-2 py-0.5 rounded-full mt-2">
+                  ⚠️ NOT DECOMPOSED!
+                </span>
+              </div>
+
             </div>
 
-            {/* Jute */}
-            <div className="flex flex-col items-center justify-start h-full gap-4">
-              <div className="bg-white/10 px-3 py-1 rounded-full text-white/80 font-bold text-sm mb-4">Jute Bag</div>
-              <div className="relative w-32 h-32 flex items-center justify-center">
-                <motion.div 
-                  className="text-6xl absolute"
-                  animate={getDecompState(currentStage.days, 365)} // 1 year
-                >
-                  🛍️
-                </motion.div>
-                <motion.div 
-                  className="text-5xl absolute text-brown-900"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: getDecompState(currentStage.days, 365).showSoil ? 1 : 0 }}
-                >
-                  🪴
-                </motion.div>
-              </div>
-            </div>
-
-            {/* Plastic */}
-            <div className="flex flex-col items-center justify-start h-full gap-4">
-              <div className="bg-white/10 px-3 py-1 rounded-full text-white/80 font-bold text-sm mb-4">Plastic Bottle</div>
-              <div className="relative w-32 h-32 flex items-center justify-center">
-                <motion.div 
-                  className="text-6xl absolute"
-                  // Plastic doesn't degrade in this timeframe
-                  animate={{ opacity: 1, scale: 1 }} 
-                >
-                  🍼
-                </motion.div>
-              </div>
+            {/* Time Machine Slider */}
+            <div className="bg-white/95 rounded-2xl p-4 mt-6 shadow-soft flex items-center gap-4">
+              <span className="text-xs font-black text-text-dark whitespace-nowrap">
+                ⏳ Time Machine:
+              </span>
+              <input
+                type="range"
+                min="0"
+                max={STAGES.length - 1}
+                value={sliderIndex}
+                onChange={(e) => handleSliderChange(Number(e.target.value))}
+                className="w-full h-3 bg-lab-chalk rounded-lg appearance-none cursor-pointer accent-pip-blue"
+              />
+              <span className="text-xs font-black text-pip-blue font-mono whitespace-nowrap">
+                {currentStage.label}
+              </span>
             </div>
           </div>
-        </div>
 
-        {/* Time Slider */}
-        <div className="w-full max-w-4xl mt-8 bg-white p-6 rounded-2xl shadow-sm border border-lab-wood-light flex items-center gap-6">
-          <span className="text-2xl">⏳</span>
-          <input 
-            type="range" 
-            min="0" 
-            max={STAGES.length - 1} 
-            value={sliderIndex}
-            onChange={(e) => setSliderIndex(parseInt(e.target.value))}
-            className="w-full h-4 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-nature-green"
-          />
-          <div className="w-24 text-right font-bold text-text-dark">
-            {currentStage.label}
-          </div>
-        </div>
+          {/* Discovery Card */}
+          {is100Years && (
+            <motion.div 
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-6 bg-white border-2 border-fire-red p-6 rounded-3xl w-full shadow-soft text-left space-y-3"
+            >
+              <div className="flex items-center gap-2 text-fire-red font-black text-base">
+                <Lightbulb size={20} />
+                <span>The Science of Non-Biodegradability</span>
+              </div>
+              <p className="text-xs sm:text-sm text-text-dark leading-relaxed">
+                Natural materials (cotton, jute, wool) are <KidTermTooltip term="natural" displayText="biodegradable" /> and return nutrients to soil. Synthetic <KidTermTooltip term="synthetic" displayText="plastics" /> are <KidTermTooltip term="non-biodegradable" displayText="non-biodegradable" /> and remain unchanged for 500+ years. That is why we must practice the <strong>4R Principle: Reduce, Reuse, Recycle, and Recover!</strong>
+              </p>
 
-        {/* Lesson conclusion */}
-        {is100Years && (
-           <motion.div 
-           initial={{ opacity: 0, y: 20 }}
-           animate={{ opacity: 1, y: 0 }}
-           className="mt-8 exam-bridge bg-red-50 border-2 border-fire-red p-6 rounded-2xl max-w-3xl w-full shadow-md text-center"
-         >
-           <h3 className="text-xl font-bold text-fire-red mb-2 font-mono flex items-center justify-center gap-2">
-             <span>⚠️</span> Crucial Discovery
-           </h3>
-           <p className="text-text-dark font-mono text-lg leading-relaxed">
-             Natural materials like cotton and jute are <span className="science-term text-nature-green font-bold">biodegradable</span> (broken down by bacteria). 
-             Synthetic <span className="science-term text-fire-red font-bold">plastics are non-biodegradable</span> and persist in the environment for hundreds of years, causing pollution.
-           </p>
-         </motion.div>
-        )}
-      </main>
-      
-      <footer className="mt-8 flex justify-between w-full">
-        <Link href="/play/experiments" className="px-6 py-3 bg-lab-wood text-white font-bold rounded-xl hover:bg-lab-wood-dark transition-colors">
-          Back to Lab Tests
-        </Link>
-        <Link 
-          href="/play" 
-          className="px-6 py-3 bg-pip-blue text-white font-bold rounded-xl hover:bg-pip-blue-dark transition-colors shadow-sm"
-        >
-          Finish Mission
-        </Link>
-      </footer>
+              <SentenceVoiceReader
+                sentence="Plastics are non-biodegradable and take hundreds of years to decompose!"
+                conceptTitle="Environmental Science"
+              />
+            </motion.div>
+          )}
+        </main>
+
+        <footer className="mt-8 flex justify-between items-center pt-4 border-t border-lab-wood/15">
+          <Link 
+            href="/play/plastic" 
+            onClick={() => playClickSound()}
+            className="px-5 py-2.5 bg-lab-wood text-white font-bold rounded-xl hover:bg-lab-wood-dark transition-colors text-xs flex items-center gap-1.5"
+          >
+            <ArrowLeft size={14} />
+            <span>← Mission 5 (Plastic)</span>
+          </Link>
+          <button 
+            onClick={handleNextClick}
+            className={`px-6 py-2.5 rounded-xl font-black text-xs shadow-soft transition-all flex items-center gap-1.5 ${
+              hasReached100
+                ? "bg-nature-green hover:bg-nature-green-dark text-white cursor-pointer"
+                : "bg-gray-300 text-gray-700 cursor-not-allowed"
+            }`}
+          >
+            <span>Next: Rubber & Adhesives Lab ➔</span>
+            {!hasReached100 && <Lock size={13} className="text-gray-600" />}
+          </button>
+        </footer>
+      </div>
+
+      {/* Parent PIN Lock Gate Modal */}
+      <ParentPinGateModal
+        isOpen={showPinGate}
+        onClose={() => setShowPinGate(false)}
+        onUnlockSuccess={() => router.push("/play/extras")}
+        activityTitle="Mission 6: 100-Year Underground Time Travel"
+      />
     </div>
   );
 }
