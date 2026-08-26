@@ -1,11 +1,11 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { usePathname } from "next/navigation";
-import Link from "next/link";
 import { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { motion } from "framer-motion";
 import { ChevronDown, ChevronUp, Users, BookOpen, Compass, ArrowLeft } from "lucide-react";
-import { playClickSound } from "@/lib/audio-manager";
+import { playClickSound, getVoicePersona, setVoicePersona, speak } from "@/lib/audio-manager";
 
 const TRAIL_NODES = [
   { id: "origins", icon: "🌱", label: "Origins", route: "/play/origins" },
@@ -112,8 +112,24 @@ export function LearningTrail({
                 })}
               </div>
 
-              {/* Action Buttons: Discovery Book & Parent Portal */}
+              {/* Action Buttons: Voice Switcher, Discovery Book & Parent Portal */}
               <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    playClickSound();
+                    const personas: ("child" | "educator" | "adventurer")[] = ["child", "educator", "adventurer"];
+                    const current = getVoicePersona();
+                    const next = personas[(personas.indexOf(current) + 1) % personas.length];
+                    setVoicePersona(next);
+                    speak(`Voice switched to ${next === "child" ? "Pip Child" : next === "educator" ? "Professor Jenny" : "Explorer Guy"}!`);
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-900 font-extrabold text-xs border border-purple-200 transition-all shadow-xs"
+                  title="Switch Natural Voice Persona (Pip / Professor Jenny / Explorer Guy)"
+                >
+                  <span>🎙️</span>
+                  <span>Natural Voice</span>
+                </button>
+
                 <Link
                   href="/play/discovery-book"
                   onClick={() => playClickSound()}

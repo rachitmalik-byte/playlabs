@@ -211,6 +211,23 @@ export function setMusicVolume(targetVol: number) {
 let isTtsEnabled = true;
 let isSpeakingNow = false;
 let lastSpokenText = "";
+let currentNeuralAudio: HTMLAudioElement | null = null;
+let currentVoicePersona: "child" | "educator" | "adventurer" = "child";
+
+export function setVoicePersona(persona: "child" | "educator" | "adventurer") {
+  currentVoicePersona = persona;
+  if (typeof window !== "undefined") {
+    localStorage.setItem("polyquest-voice-persona", persona);
+  }
+}
+
+export function getVoicePersona(): "child" | "educator" | "adventurer" {
+  if (typeof window !== "undefined") {
+    const saved = localStorage.getItem("polyquest-voice-persona");
+    if (saved === "child" || saved === "educator" || saved === "adventurer") return saved;
+  }
+  return "child";
+}
 
 export function setVoiceEnabled(enabled: boolean) {
   isTtsEnabled = enabled;
@@ -231,14 +248,14 @@ export function getIsVoiceEnabled(): boolean {
   return true;
 }
 
-/** Get best natural sounding voice available in client browser */
+/** Get best natural sounding voice available in client browser as fallback */
 export function getBestNaturalVoice(): SpeechSynthesisVoice | null {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return null;
 
   const voices = window.speechSynthesis.getVoices();
   if (!voices || voices.length === 0) return null;
 
-  // 1. Look for modern natural neural voices (Edge/Chrome Natural voices)
+  // 1. Look for modern natural neural voices
   const naturalNeural = voices.find((v) => 
     v.lang.startsWith("en") && 
     (v.name.includes("Natural") || v.name.includes("Neural") || v.name.includes("Online"))
@@ -260,45 +277,23 @@ export function getBestNaturalVoice(): SpeechSynthesisVoice | null {
   );
   if (premiumNamed) return premiumNamed;
 
-  // 3. Fallback to any English female voice (typically friendlier for kids)
   const englishFemale = voices.find((v) => 
     v.lang.startsWith("en") && v.name.toLowerCase().includes("female")
   );
   if (englishFemale) return englishFemale;
 
-  // 4. Any English voice
   const anyEnglish = voices.find((v) => v.lang.startsWith("en"));
   if (anyEnglish) return anyEnglish;
 
   return voices[0] || null;
 }
 
-/** Speak Pip's dialogue with a warm, natural human-like cadence */
-export function speak(
-  text: string,
-  callbacks?: {
-    onStart?: () => void;
-    onEnd?: () => void;
-  }
-) {
-  if (!getIsVoiceEnabled() || typeof window === "undefined" || !("speechSynthesis" in window)) {
+/** Fallback to local browser speech synthesis if offline */
+function speakBrowserFallback(cleanText: string, callbacks?: { onStart?: () => void; onEnd?: () => void }) {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) {
     callbacks?.onEnd?.();
     return;
   }
-
-  // Clean text from emojis and markdown formatting
-  const cleanText = text
-    .replace(/[\u{1F300}-\u{1F9FF}]/gu, "")
-    .replace(/[*_#`~➔→]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  if (!cleanText) {
-    callbacks?.onEnd?.();
-    return;
-  }
-
-  lastSpokenText = text;
 
   try {
     window.speechSynthesis.cancel();
@@ -310,17 +305,12 @@ export function speak(
       utterance.voice = naturalVoice;
     }
     utterance.lang = "en-US";
-
-    // Natural parameters:
-    // Natural neural voices sound best at rate ~0.95 and pitch 1.05
-    const isNaturalModel = naturalVoice?.name?.includes("Natural") || naturalVoice?.name?.includes("Neural");
-    utterance.rate = isNaturalModel ? 0.96 : 0.92;
-    utterance.pitch = isNaturalModel ? 1.05 : 1.15;
+    utterance.rate = 0.95;
+    utterance.pitch = 1.08;
     utterance.volume = 1.0;
 
     utterance.onstart = () => {
       isSpeakingNow = true;
-      // Gently duck background music while Pip speaks
       setMusicVolume(0.12);
       callbacks?.onStart?.();
       window.dispatchEvent(new CustomEvent("polyquest-pip-speaking", { detail: { speaking: true } }));
@@ -328,7 +318,6 @@ export function speak(
 
     utterance.onend = () => {
       isSpeakingNow = false;
-      // Restore background music volume
       setMusicVolume(0.35);
       callbacks?.onEnd?.();
       window.dispatchEvent(new CustomEvent("polyquest-pip-speaking", { detail: { speaking: false } }));
@@ -342,9 +331,75 @@ export function speak(
     };
 
     window.speechSynthesis.speak(utterance);
-  } catch (err) {
-    console.warn("TTS speak error:", err);
+  } catch {
     callbacks?.onEnd?.();
+  }
+}
+
+/** Speak Pip's dialogue with natural, emotional, human Neural Voice */
+export function speak(
+  text: string,
+  callbacks?: {
+    onStart?: () => void;
+    onEnd?: () => void;
+  }
+) {
+  if (!getIsVoiceEnabled() || typeof window === "undefined") {
+    callbacks?.onEnd?.();
+    return;
+  }
+
+  // Clean text from emojis, markdown, and arrows
+  const cleanText = text
+    .replace(/[\u{1F300}-\u{1F9FF}]/gu, "")
+    .replace(/[*_#`~➔→]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!cleanText) {
+    callbacks?.onEnd?.();
+    return;
+  }
+
+  lastSpokenText = text;
+  stopSpeaking();
+
+  try {
+    const persona = getVoicePersona();
+    const ttsUrl = `/api/tts?text=${encodeURIComponent(cleanText)}&voice=${persona}`;
+
+    const audio = new Audio(ttsUrl);
+    currentNeuralAudio = audio;
+
+    audio.onplay = () => {
+      isSpeakingNow = true;
+      setMusicVolume(0.12);
+      callbacks?.onStart?.();
+      window.dispatchEvent(new CustomEvent("polyquest-pip-speaking", { detail: { speaking: true } }));
+    };
+
+    audio.onended = () => {
+      isSpeakingNow = false;
+      setMusicVolume(0.35);
+      currentNeuralAudio = null;
+      callbacks?.onEnd?.();
+      window.dispatchEvent(new CustomEvent("polyquest-pip-speaking", { detail: { speaking: false } }));
+    };
+
+    audio.onerror = () => {
+      // If neural API request fails or is offline, fall back to browser voice
+      console.warn("Neural audio stream failed, switching to browser TTS fallback.");
+      currentNeuralAudio = null;
+      speakBrowserFallback(cleanText, callbacks);
+    };
+
+    audio.play().catch(() => {
+      // Autoplay restriction or network fallback
+      speakBrowserFallback(cleanText, callbacks);
+    });
+
+  } catch {
+    speakBrowserFallback(cleanText, callbacks);
   }
 }
 
@@ -355,6 +410,11 @@ export function replayLastSpeech() {
 }
 
 export function stopSpeaking() {
+  if (currentNeuralAudio) {
+    currentNeuralAudio.pause();
+    currentNeuralAudio.currentTime = 0;
+    currentNeuralAudio = null;
+  }
   if (typeof window !== "undefined" && "speechSynthesis" in window) {
     window.speechSynthesis.cancel();
   }
