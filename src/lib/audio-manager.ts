@@ -288,7 +288,7 @@ export function getBestNaturalVoice(): SpeechSynthesisVoice | null {
   return voices[0] || null;
 }
 
-/** Fallback to local browser speech synthesis if offline */
+/** Fallback to local browser speech synthesis only if neural audio fails */
 function speakBrowserFallback(cleanText: string, callbacks?: { onStart?: () => void; onEnd?: () => void }) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) {
     callbacks?.onEnd?.();
@@ -305,8 +305,8 @@ function speakBrowserFallback(cleanText: string, callbacks?: { onStart?: () => v
       utterance.voice = naturalVoice;
     }
     utterance.lang = "en-US";
-    utterance.rate = 0.95;
-    utterance.pitch = 1.08;
+    utterance.rate = 0.94;
+    utterance.pitch = 1.05;
     utterance.volume = 1.0;
 
     utterance.onstart = () => {
@@ -336,7 +336,7 @@ function speakBrowserFallback(cleanText: string, callbacks?: { onStart?: () => v
   }
 }
 
-/** Speak Pip's dialogue with natural, emotional, human Neural Voice */
+/** Speak Pip's dialogue exclusively with Natural Neural Audio */
 export function speak(
   text: string,
   callbacks?: {
@@ -362,6 +362,8 @@ export function speak(
   }
 
   lastSpokenText = text;
+  
+  // Stop any currently playing audio or speech synthesis immediately
   stopSpeaking();
 
   try {
@@ -387,14 +389,11 @@ export function speak(
     };
 
     audio.onerror = () => {
-      // If neural API request fails or is offline, fall back to browser voice
-      console.warn("Neural audio stream failed, switching to browser TTS fallback.");
       currentNeuralAudio = null;
       speakBrowserFallback(cleanText, callbacks);
     };
 
     audio.play().catch(() => {
-      // Autoplay restriction or network fallback
       speakBrowserFallback(cleanText, callbacks);
     });
 

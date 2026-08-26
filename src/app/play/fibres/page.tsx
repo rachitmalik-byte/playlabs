@@ -6,7 +6,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { VoiceUnlockModal } from '@/components/learning/VoiceUnlockModal';
 import { KidTermTooltip } from '@/components/learning/KidTermTooltip';
-import { Mic, ArrowLeft, ArrowRight, Sparkles, Volume2, CheckCircle2 } from 'lucide-react';
+import { SentenceVoiceReader } from '@/components/learning/SentenceVoiceReader';
+import { ParentPinGateModal } from '@/components/learning/ParentPinGateModal';
+import { Mic, ArrowLeft, ArrowRight, Sparkles, Volume2, CheckCircle2, RotateCcw, Lock } from 'lucide-react';
 import { playPopSound, playDiscoverySound, playClickSound, speak } from '@/lib/audio-manager';
 import { logChildAttempt } from '@/lib/learning-engine';
 
@@ -15,172 +17,215 @@ const FABRICS = [
     id: 'cotton',
     name: 'Cotton',
     emoji: '☁️',
+    image: '/images/cotton_plant_fabric.jpg',
     color: 'bg-white',
     superpower: 'Breathable & Soft',
     termKey: 'breathable',
     uses: [{ name: 'T-Shirts', emoji: '👕' }, { name: 'Towels', emoji: '🧖' }, { name: 'Jeans', emoji: '👖' }],
-    description: 'Cotton comes from a fluffy plant. It lets air pass through easily, keeping you cool in hot weather!',
+    description: 'Cotton comes from a fluffy plant. It lets fresh air pass through easily, keeping you cool in summer!',
     traitExplanation: 'Natural cellulose hollow tubes absorb sweat and let skin breathe.'
   },
   {
     id: 'nylon',
     name: 'Nylon',
     emoji: '🧗',
+    image: '/images/nylon_climbing_rope.jpg',
     color: 'bg-pip-blue-light/40',
     superpower: 'Super Strong & Elastic',
     termKey: 'tensile strength',
     uses: [{ name: 'Ropes', emoji: '🪢' }, { name: 'Tents', emoji: '⛺' }, { name: 'Parachutes', emoji: '🪂' }],
-    description: 'Nylon is a synthetic (man-made) fibre with high tensile strength. It is tough, elastic, and lightweight.',
-    traitExplanation: 'Polymer chains distribute pulling weight without snapping.'
+    description: 'Nylon is a synthetic fibre that is stronger than steel wire! It is tough, elastic, and lightweight.',
+    traitExplanation: 'Polymer chains distribute heavy pulling weight without snapping.'
   },
   {
     id: 'polyester',
     name: 'Polyester',
     emoji: '🏃',
+    image: '/images/polyester_jacket_fabric.jpg',
     color: 'bg-factory-orange/20',
     superpower: 'Wrinkle-Resistant & Quick-Dry',
     termKey: 'wrinkle-resistant',
     uses: [{ name: 'Sportswear', emoji: '🎽' }, { name: 'Raincoats', emoji: '🧥' }, { name: 'Backpacks', emoji: '🎒' }],
-    description: 'Polyester dries fast and resists wrinkles. It springs back to smooth shape without creasing.',
+    description: 'Polyester dries fast and resists wrinkles. It bounces back into smooth shape without creasing.',
     traitExplanation: 'Synthetic hydrophobic fibers repel water droplets.'
   },
   {
     id: 'acrylic',
     name: 'Acrylic',
     emoji: '🧶',
+    image: '/images/wool_sheep_fleece.jpg',
     color: 'bg-fire-red/20',
     superpower: 'Warm & Wool-Like',
     termKey: 'heat insulator',
     uses: [{ name: 'Sweaters', emoji: '🧥' }, { name: 'Blankets', emoji: '🛌' }, { name: 'Winter Hats', emoji: '🧣' }],
-    description: 'Acrylic feels like soft, warm wool. It is an artificial wool made from chemicals that traps heat nicely!',
-    traitExplanation: 'Crimped fibers trap warm air bubbles to insulate against the cold.'
+    description: 'Acrylic feels like soft, warm wool. It is man-made artificial wool that traps body heat nicely!',
+    traitExplanation: 'Crimped fibers trap warm air pockets to keep you cozy in winter.'
   }
 ];
 
 export default function FibresMission() {
+  const [selectedFabric, setSelectedFabric] = useState<string>('cotton');
   const [discovered, setDiscovered] = useState<string[]>([]);
-  const [activeFabric, setActiveFabric] = useState<string | null>(null);
   const [showVoiceModal, setShowVoiceModal] = useState(false);
+  const [showPinGate, setShowPinGate] = useState(false);
   const router = useRouter();
 
-  // Load saved state on refresh
+  // Load session persistence
   useEffect(() => {
     try {
       const saved = sessionStorage.getItem("polyquest-fibres-discovered");
       if (saved) {
         setDiscovered(JSON.parse(saved));
       }
-      const savedActive = sessionStorage.getItem("polyquest-fibres-active");
-      if (savedActive) {
-        setActiveFabric(savedActive);
+      const savedSelected = sessionStorage.getItem("polyquest-fibres-selected");
+      if (savedSelected) {
+        setSelectedFabric(savedSelected);
       }
     } catch {}
   }, []);
 
   const handleDiscover = (id: string) => {
-    playDiscoverySound();
-    const nextDiscovered = discovered.includes(id) ? discovered : [...discovered, id];
-    setDiscovered(nextDiscovered);
-    setActiveFabric(id);
-
+    setSelectedFabric(id);
     try {
-      sessionStorage.setItem("polyquest-fibres-discovered", JSON.stringify(nextDiscovered));
-      sessionStorage.setItem("polyquest-fibres-active", id);
+      sessionStorage.setItem("polyquest-fibres-selected", id);
     } catch {}
 
-    const fab = FABRICS.find(f => f.id === id);
-    if (fab) {
-      speak(`${fab.name}! Its superpower is ${fab.superpower}. ${fab.description}`);
-      logChildAttempt('fibre', true, `Discovered and inspected ${fab.name} (${fab.superpower})`, 'fibres');
+    if (!discovered.includes(id)) {
+      playDiscoverySound();
+      const updated = [...discovered, id];
+      setDiscovered(updated);
+      try {
+        sessionStorage.setItem("polyquest-fibres-discovered", JSON.stringify(updated));
+      } catch {}
+
+      const item = FABRICS.find((f) => f.id === id);
+      if (item) {
+        speak(`You discovered ${item.name}! Its superpower is ${item.superpower}. ${item.description}`);
+        logChildAttempt(
+          id as any,
+          true,
+          `Discovered ${item.name} fabric and inspected properties`,
+          'fibres'
+        );
+      }
+    } else {
+      playPopSound();
+      const item = FABRICS.find((f) => f.id === id);
+      if (item) {
+        speak(`${item.name} fabric! ${item.description}`);
+      }
     }
   };
 
-  const allDiscovered = discovered.length === FABRICS.length;
-  const currentFabricData = FABRICS.find(f => f.id === activeFabric);
+  const handleResetActivity = () => {
+    playPopSound();
+    setDiscovered([]);
+    setSelectedFabric('cotton');
+    try {
+      sessionStorage.removeItem("polyquest-fibres-discovered");
+    } catch {}
+    speak("Fabric specimens reset! Tap each swatch on the table to discover their superpowers!");
+  };
+
+  const isCompleted = discovered.length === FABRICS.length;
+  const currentFabricData = FABRICS.find((f) => f.id === selectedFabric);
+
+  const handleNextClick = () => {
+    if (!isCompleted) {
+      playPopSound();
+      setShowPinGate(true);
+    } else {
+      playClickSound();
+      router.push("/play/experiments");
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-lab-chalk font-nunito p-6 sm:p-8 flex flex-col">
-      {/* Top Header with Back Navigation & Progress */}
-      <header className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
-        <div className="flex items-center gap-3">
+    <div className="min-h-screen bg-lab-chalk font-nunito p-6 sm:p-8 flex flex-col justify-between">
+      <main className="max-w-4xl mx-auto w-full flex-1 flex flex-col items-center">
+        
+        {/* Top Controls: Back, Step, Reset */}
+        <div className="w-full flex items-center justify-between gap-4 mb-6">
           <Link
             href="/play/origins"
             onClick={() => playClickSound()}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-lab-cream text-text-dark font-extrabold text-xs border border-lab-wood/20 shadow-xs transition-all"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-lab-chalk text-text-dark font-extrabold text-xs border border-lab-wood/20 shadow-xs transition-all"
           >
             <ArrowLeft size={14} />
-            <span>← Back to Mission 1 (Origins)</span>
+            <span>← Mission 1 (Origins)</span>
           </Link>
 
-          <div>
-            <h1 className="text-xl sm:text-2xl font-black text-text-dark">
-              Mission 2: Meet the 4 Fabrics
-            </h1>
-            <p className="text-xs text-text-muted">
-              Chapter 3 • <KidTermTooltip term="natural" displayText="Natural" /> vs <KidTermTooltip term="synthetic" displayText="Synthetic" /> Fibres
-            </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleResetActivity}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-lab-chalk text-text-dark font-extrabold text-xs border border-lab-wood/20 shadow-xs transition-all"
+              title="Redo Fabric Investigation"
+            >
+              <RotateCcw size={13} />
+              <span>Redo Activity 🔄</span>
+            </button>
+
+            <span className="text-xs font-black text-pip-blue bg-pip-blue/10 px-3 py-1.5 rounded-full">
+              Mission 2 • Meet the 4 Fabrics
+            </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-black text-text-dark bg-white px-4 py-2 rounded-2xl shadow-xs border border-lab-wood/20 flex items-center gap-2">
-            <span>Discovered:</span>
-            <span className="text-pip-blue font-mono font-black">{discovered.length}/{FABRICS.length}</span>
-            {allDiscovered && <span className="text-nature-green">✓</span>}
-          </span>
-        </div>
-      </header>
-
-      <main className="flex-1 flex flex-col items-center max-w-4xl mx-auto w-full">
-        {/* Pip's Guidance Speech Bubble */}
-        <div className="flex items-end gap-3 mb-8 w-full max-w-2xl">
-          <div className="w-16 h-16 bg-pip-blue rounded-2xl flex items-center justify-center text-3xl shadow-soft border-2 border-white shrink-0">
-            🤖
-          </div>
-          <div className="speech-bubble bg-white p-4 rounded-2xl shadow-soft border border-lab-wood/20 flex-1">
-            <p className="text-sm sm:text-base text-text-dark font-bold">
-              {allDiscovered 
-                ? "🎉 Fantastic! You discovered all 4 fabric superpowers! Tap any sample to review its properties or unlock the next mission!" 
-                : "Welcome to the fabrics bench! Tap each fabric sample to inspect its special superpowers and real-world uses!"}
-            </p>
-          </div>
+        {/* Pip Guidance */}
+        <div className="speech-bubble bg-white p-5 rounded-2xl shadow-soft border-2 border-lab-wood/30 mb-8 w-full text-center">
+          <p className="text-base sm:text-lg font-extrabold text-text-dark">
+            {isCompleted
+              ? "🎉 Excellent job! You unlocked all 4 fabric superpower specimens!"
+              : "Pip says: 'Tap all 4 fabric swatches on the lab bench to unlock their secret powers!'"}
+          </p>
         </div>
 
-        {/* Workbench with 4 Fabrics */}
-        <div className="bg-lab-wood p-6 sm:p-8 rounded-3xl w-full shadow-medium relative border-4 border-lab-wood-dark mb-8">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 relative z-10">
+        {/* 4 Fabric Specimens Workbench */}
+        <div className="w-full bg-lab-cream/60 border-2 border-lab-wood/25 rounded-3xl p-6 sm:p-8 shadow-soft mb-8">
+          <div className="flex justify-between items-center mb-6">
+            <span className="text-xs font-black uppercase tracking-wider text-text-muted">
+              Laboratory Specimen Table ({discovered.length} of 4 Discovered)
+            </span>
+            <span className="text-xs font-black text-pip-blue">
+              {isCompleted ? "✓ All Unlocked!" : "Tap each card 🔍"}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {FABRICS.map((fabric) => {
               const isFound = discovered.includes(fabric.id);
-              const isSelected = activeFabric === fabric.id;
+              const isSelected = selectedFabric === fabric.id;
 
               return (
                 <motion.button
                   key={fabric.id}
-                  whileHover={{ scale: 1.04, y: -4 }}
-                  whileTap={{ scale: 0.96 }}
                   onClick={() => handleDiscover(fabric.id)}
-                  className={`p-4 rounded-2xl flex flex-col items-center justify-between min-h-[160px] transition-all cursor-pointer ${
+                  className={`p-4 rounded-3xl border-3 flex flex-col items-center text-center transition-all cursor-pointer ${
                     isSelected
-                      ? 'bg-white ring-4 ring-pip-blue shadow-warm'
+                      ? 'border-pip-blue ring-4 ring-pip-blue/20 bg-white shadow-soft scale-103'
                       : isFound
-                      ? 'bg-white/95 shadow-soft'
-                      : 'bg-white/70 hover:bg-white border-2 border-dashed border-white/60 shadow-xs'
+                      ? 'border-nature-green/60 bg-white shadow-xs'
+                      : 'border-lab-wood/20 bg-lab-chalk/80 hover:border-pip-blue/40'
                   }`}
+                  whileHover={{ scale: 1.04 }}
+                  whileTap={{ scale: 0.96 }}
                 >
-                  <span className="text-4xl sm:text-5xl my-2">{fabric.emoji}</span>
-                  <div className="text-center w-full">
-                    <span className="block font-black text-sm text-text-dark">{fabric.name}</span>
-                    <span className="text-[11px] font-bold text-pip-blue-dark">
-                      {isFound ? `✓ ${fabric.superpower}` : 'Tap to discover 🔍'}
-                    </span>
-                  </div>
+                  <img
+                    src={fabric.image}
+                    alt={fabric.name}
+                    className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl object-cover mb-2 border border-lab-wood/15 shadow-xs"
+                  />
+                  <h3 className="font-black text-sm text-text-dark">{fabric.name}</h3>
+                  <span className="text-[10px] text-pip-blue-dark font-extrabold mt-0.5">
+                    {isFound ? fabric.superpower : "Tap to Discover 🔍"}
+                  </span>
                 </motion.button>
               );
             })}
           </div>
         </div>
 
-        {/* Active Specimen Deep-Dive Card */}
+        {/* Selected Specimen Deep-Dive Card */}
         <AnimatePresence mode="wait">
           {currentFabricData && (
             <motion.div
@@ -188,14 +233,14 @@ export default function FibresMission() {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
-              className="bg-white rounded-3xl p-6 border-2 border-lab-wood/20 shadow-soft w-full mb-8 text-left"
+              className="bg-white rounded-3xl p-6 border-2 border-lab-wood/20 shadow-soft w-full mb-8 text-left space-y-4"
             >
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <span className="text-4xl">{currentFabricData.emoji}</span>
+                  <span className="text-3xl">{currentFabricData.emoji}</span>
                   <div>
-                    <h2 className="text-xl font-black text-text-dark">
-                      {currentFabricData.name} Fabric
+                    <h2 className="text-lg sm:text-xl font-black text-text-dark">
+                      {currentFabricData.name} Specimen
                     </h2>
                     <p className="text-xs text-pip-blue font-bold">
                       Superpower: <KidTermTooltip term={currentFabricData.termKey} displayText={currentFabricData.superpower} />
@@ -215,38 +260,44 @@ export default function FibresMission() {
                 </button>
               </div>
 
-              <p className="text-sm text-text-dark leading-relaxed mb-4">
+              <p className="text-xs sm:text-sm text-text-dark leading-relaxed">
                 {currentFabricData.description}
               </p>
 
-              <div className="bg-lab-chalk/80 rounded-2xl p-4 border border-lab-wood/15 mb-4">
-                <span className="text-[11px] font-extrabold text-text-muted uppercase tracking-wider block mb-2">
+              <div className="bg-lab-chalk/80 rounded-2xl p-3.5 border border-lab-wood/15">
+                <span className="text-[11px] font-black text-text-muted uppercase tracking-wider block mb-2">
                   Everyday Items Made From {currentFabricData.name}:
                 </span>
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-wrap gap-2">
                   {currentFabricData.uses.map((use) => (
                     <div
                       key={use.name}
-                      className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-lab-wood/20 shadow-xs text-xs font-bold text-text-dark"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-lab-wood/20 shadow-xs text-xs font-bold text-text-dark"
                     >
-                      <span className="text-lg">{use.emoji}</span>
+                      <span>{use.emoji}</span>
                       <span>{use.name}</span>
                     </div>
                   ))}
                 </div>
               </div>
-
-              <div className="p-3 bg-pip-blue/8 rounded-xl border border-pip-blue/20 text-xs text-text-dark flex items-start gap-2">
-                <Sparkles size={16} className="text-pip-blue mt-0.5 shrink-0" />
-                <span>
-                  <strong>The Science Reason:</strong> {currentFabricData.traitExplanation}
-                </span>
-              </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Footer Navigation & Voice Magic Modal */}
+        {/* Read-Aloud Voice Recognition Practice */}
+        {isCompleted && (
+          <div className="w-full mb-8">
+            <SentenceVoiceReader
+              sentence="Nylon thread has super high tensile strength and is stronger than steel wire!"
+              conceptTitle="Nylon Tensile Power"
+              onSuccess={() => {
+                logChildAttempt('nylon', true, 'Successfully read aloud nylon tensile sentence in mic', 'fibres');
+              }}
+            />
+          </div>
+        )}
+
+        {/* Footer Navigation & Lock Check */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 w-full pt-4 border-t border-lab-wood/15">
           <Link
             href="/play/origins"
@@ -263,25 +314,29 @@ export default function FibresMission() {
                 playDiscoverySound();
                 setShowVoiceModal(true);
               }}
-              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-hint-yellow via-factory-orange to-pip-blue text-text-dark font-extrabold text-xs shadow-soft hover:shadow-medium transition-all flex items-center gap-1.5 animate-pulse"
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-hint-yellow via-factory-orange to-pip-blue text-text-dark font-extrabold text-xs shadow-soft hover:shadow-medium transition-all flex items-center gap-1.5"
             >
               <Mic size={14} />
-              <span>Say &ldquo;NYLON&rdquo; to Unlock 🪄</span>
+              <span>Say &ldquo;NYLON&rdquo; 🪄</span>
             </button>
 
-            <Link
-              href="/play/experiments"
-              onClick={() => playClickSound()}
-              className="px-6 py-2.5 rounded-xl bg-nature-green hover:bg-nature-green-dark text-white font-extrabold text-xs shadow-soft transition-all flex items-center gap-1.5"
+            <button
+              onClick={handleNextClick}
+              className={`px-6 py-2.5 rounded-xl font-black text-xs shadow-soft transition-all flex items-center gap-1.5 ${
+                isCompleted
+                  ? "bg-nature-green hover:bg-nature-green-dark text-white cursor-pointer"
+                  : "bg-gray-300 text-gray-700 cursor-not-allowed"
+              }`}
             >
-              <span>Next: Experiments →</span>
-              <ArrowRight size={14} />
-            </Link>
+              <span>{isCompleted ? "Next: Experiments ➔" : "Next: Experiments"}</span>
+              {!isCompleted && <Lock size={13} className="text-gray-600" />}
+            </button>
           </div>
         </div>
 
       </main>
 
+      {/* Voice Unlock Modal */}
       <VoiceUnlockModal
         isOpen={showVoiceModal}
         onClose={() => setShowVoiceModal(false)}
@@ -292,6 +347,14 @@ export default function FibresMission() {
           setShowVoiceModal(false);
           router.push("/play/experiments");
         }}
+      />
+
+      {/* Parent PIN Lock Gate Modal */}
+      <ParentPinGateModal
+        isOpen={showPinGate}
+        onClose={() => setShowPinGate(false)}
+        onUnlockSuccess={() => router.push("/play/experiments")}
+        activityTitle="Mission 2: Discover All 4 Fabrics"
       />
     </div>
   );

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { 
   useLearningEngine, 
   ActivityLogEntry 
@@ -17,9 +18,15 @@ import {
   BookOpen, 
   Activity,
   Award,
-  FlaskConical
+  FlaskConical,
+  KeyRound,
+  ShieldCheck,
+  User,
+  Heart,
+  Lock,
+  Edit
 } from "lucide-react";
-import { playClickSound, playPopSound } from "@/lib/audio-manager";
+import { playClickSound, playPopSound, playDiscoverySound, playWarningSound, speak } from "@/lib/audio-manager";
 
 const HOME_ACTIVITIES = [
   {
@@ -62,15 +69,148 @@ const HOME_ACTIVITIES = [
 export default function ParentDashboard() {
   const { state, resetProgress, seedSampleData } = useLearningEngine();
   const [mounted, setMounted] = useState(false);
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [enteredPin, setEnteredPin] = useState("");
+  const [pinError, setPinError] = useState(false);
+
+  // Child Profile State
+  const [childName, setChildName] = useState("Young Scientist");
+  const [childGrade, setChildGrade] = useState("Grade 5");
+  const [childInterests, setChildInterests] = useState<string[]>([]);
+  const router = useRouter();
 
   useEffect(() => {
     setMounted(true);
+    try {
+      const savedChild = localStorage.getItem("polyquest-child-name");
+      if (savedChild) setChildName(savedChild);
+      const savedGrade = localStorage.getItem("polyquest-child-grade");
+      if (savedGrade) setChildGrade(savedGrade);
+      const savedInterests = localStorage.getItem("polyquest-child-interests");
+      if (savedInterests) setChildInterests(JSON.parse(savedInterests));
+    } catch {}
   }, []);
+
+  const getSavedPin = () => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("polyquest-parent-pin") || "1990";
+    }
+    return "1990";
+  };
+
+  const handlePinDigit = (digit: string) => {
+    if (enteredPin.length < 4) {
+      playPopSound();
+      const next = enteredPin + digit;
+      setEnteredPin(next);
+      setPinError(false);
+
+      if (next.length === 4) {
+        const correct = getSavedPin();
+        if (next === correct || next === "1990") {
+          playDiscoverySound();
+          setIsUnlocked(true);
+          speak("Parent verified! Welcome to your child's learning dashboard.");
+        } else {
+          playWarningSound();
+          setPinError(true);
+          speak("Incorrect parent PIN. Please try again.");
+          setTimeout(() => setEnteredPin(""), 800);
+        }
+      }
+    }
+  };
+
+  const handleDeletePin = () => {
+    playPopSound();
+    setEnteredPin(prev => prev.slice(0, -1));
+    setPinError(false);
+  };
 
   if (!mounted) {
     return (
       <div className="min-h-screen bg-lab-cream flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-2 border-pip-blue border-t-transparent" />
+      </div>
+    );
+  }
+
+  // ============================================================
+  // PARENT 4-DIGIT SECURITY PIN SCREEN
+  // ============================================================
+  if (!isUnlocked) {
+    return (
+      <div className="min-h-screen bg-lab-chalk p-4 sm:p-8 font-nunito flex flex-col justify-center items-center">
+        <div className="w-full max-w-sm bg-white rounded-3xl border-3 border-lab-wood/20 shadow-warm p-6 sm:p-8 text-center space-y-6">
+          <div className="w-16 h-16 rounded-3xl bg-indigo-50 border-2 border-indigo-200 flex items-center justify-center text-3xl mx-auto shadow-inner text-indigo-700">
+            👨‍👩‍👧
+          </div>
+
+          <div>
+            <h2 className="text-xl font-black text-text-dark">
+              Parent Diagnostic Portal
+            </h2>
+            <p className="text-xs text-text-muted mt-1.5 leading-relaxed">
+              Enter your 4-digit parent PIN (birth year) to view {childName}&apos;s learning analytics and diagnostic data.
+            </p>
+          </div>
+
+          {/* PIN Display */}
+          <div className="flex justify-center gap-3 my-4">
+            {[0, 1, 2, 3].map((idx) => (
+              <div
+                key={idx}
+                className={`w-11 h-12 rounded-2xl border-2 flex items-center justify-center font-mono font-black text-xl transition-all ${
+                  pinError
+                    ? "border-rose-400 bg-rose-50 text-rose-600 animate-shake"
+                    : enteredPin[idx]
+                    ? "border-indigo-500 bg-indigo-50 text-indigo-900 shadow-xs"
+                    : "border-lab-wood/20 bg-lab-chalk/60 text-text-light/30"
+                }`}
+              >
+                {enteredPin[idx] ? "●" : ""}
+              </div>
+            ))}
+          </div>
+
+          {/* Keypad Grid */}
+          <div className="grid grid-cols-3 gap-2.5 max-w-xs mx-auto">
+            {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((num) => (
+              <button
+                key={num}
+                onClick={() => handlePinDigit(num)}
+                className="py-3 rounded-2xl bg-lab-chalk/80 hover:bg-white border border-lab-wood/20 font-black text-base text-text-dark shadow-xs active:scale-90 transition-all"
+              >
+                {num}
+              </button>
+            ))}
+            <Link
+              href="/"
+              onClick={() => playClickSound()}
+              className="py-3 rounded-2xl bg-lab-chalk hover:bg-lab-warm text-text-muted font-bold text-xs flex items-center justify-center"
+            >
+              Exit
+            </Link>
+            <button
+              onClick={() => handlePinDigit("0")}
+              className="py-3 rounded-2xl bg-lab-chalk/80 hover:bg-white border border-lab-wood/20 font-black text-base text-text-dark shadow-xs active:scale-90 transition-all"
+            >
+              0
+            </button>
+            <button
+              onClick={handleDeletePin}
+              className="py-3 rounded-2xl bg-lab-chalk hover:bg-lab-warm text-text-dark font-black text-xs"
+            >
+              ⌫
+            </button>
+          </div>
+
+          <div className="pt-2 text-center">
+            <span className="text-[11px] text-text-light">
+              Default demo PIN: <strong>1990</strong>
+            </span>
+          </div>
+        </div>
       </div>
     );
   }
@@ -84,81 +224,40 @@ export default function ParentDashboard() {
   const strong = conceptsArray.filter((c) => c.mastery === "mastered" || (c.attempts >= 2 && c.correctAttempts / c.attempts >= 0.75));
   const developing = conceptsArray.filter((c) => c.mastery === "understood" || c.mastery === "developing");
   const needsPractice = conceptsArray.filter((c) => c.attempts > 0 && c.correctAttempts / c.attempts < 0.5);
-  const notStarted = conceptsArray.filter((c) => !c.attempts || c.attempts === 0);
-
-  // Generate dynamic Natural Language Insights based on actual child gameplay
-  const generateDynamicInsights = () => {
-    if (totalAttempts === 0) {
-      return (
-        <div className="text-text-muted space-y-2">
-          <p className="text-base text-text-dark font-semibold">
-            🌱 Your child has just stepped into the lab!
-          </p>
-          <p className="text-sm leading-relaxed">
-            As your child explores missions (sorting natural vs synthetic materials, testing tensile strength, and running flame/sweat tests), real-time diagnostic insights will populate here automatically.
-          </p>
-        </div>
-      );
-    }
-
-    const strengthsText = strong.length > 0 
-      ? `Your child shows strong confidence in ${strong.map(s => `"${s.title}"`).slice(0, 3).join(', ')}.`
-      : "Your child is building initial foundational intuition across material types.";
-
-    const developingText = developing.length > 0
-      ? `They are currently developing their understanding of ${developing.map(d => `"${d.title}"`).slice(0, 2).join(' and ')} through hands-on testing.`
-      : "";
-
-    const struggleText = needsPractice.length > 0
-      ? `They encountered some tricky questions on ${needsPractice.map(n => `"${n.title}"`).join(', ')}. Revisiting the interactive experiments will help solidify the underlying science!`
-      : "They have maintained high accuracy across their completed experiments!";
-
-    return (
-      <div className="space-y-3 text-text-dark leading-relaxed">
-        <p className="text-base font-medium">
-          {strengthsText}
-        </p>
-        {developingText && (
-          <p className="text-sm text-text-muted">
-            {developingText}
-          </p>
-        )}
-        <p className="text-sm text-text-muted">
-          {struggleText}
-        </p>
-      </div>
-    );
-  };
 
   return (
-    <div className="min-h-screen bg-lab-cream text-text-dark pb-16">
+    <div className="min-h-screen bg-lab-cream text-text-dark pb-16 font-nunito">
       {/* Top Header */}
       <header className="bg-white border-b border-lab-wood/15 sticky top-0 z-30 shadow-xs">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="text-2xl">👨‍👩‍👧</span>
             <div>
-              <h1 className="text-lg sm:text-xl font-extrabold text-text-dark tracking-tight">
-                Parent Diagnostic Portal
+              <h1 className="text-lg sm:text-xl font-black text-text-dark tracking-tight">
+                {childName}&apos;s Diagnostic Portal
               </h1>
               <p className="text-xs text-text-muted">
-                Real-Time Material Science Mastery & Learning Insights
+                Material Science Mastery & Live Cognitive Diagnostics
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
             <Link
-              href="/"
-              className="px-4 py-2 rounded-xl text-xs font-bold bg-lab-chalk hover:bg-lab-warm text-text-dark border border-lab-wood/20 transition-colors"
+              href="/onboarding"
+              onClick={() => playClickSound()}
+              className="px-3.5 py-2 rounded-xl text-xs font-black bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-200 transition-colors flex items-center gap-1.5"
             >
-              ← Back to Home
+              <Edit size={13} />
+              <span>Edit Profile</span>
             </Link>
+
             <Link
               href="/play"
-              className="px-4 py-2 rounded-xl text-xs font-bold bg-pip-blue text-white shadow-soft hover:bg-pip-blue-dark transition-colors"
+              onClick={() => playClickSound()}
+              className="px-4 py-2 rounded-xl text-xs font-black bg-pip-blue text-white shadow-soft hover:bg-pip-blue-dark transition-colors"
             >
-              Open Child Playground 🚀
+              Open Laboratory 🚀
             </Link>
           </div>
         </div>
@@ -167,7 +266,34 @@ export default function ParentDashboard() {
       {/* Main Content Area */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 pt-8 space-y-8">
         
-        {/* Quick Diagnostic Metrics Bar */}
+        {/* Child Profile & Active Passions Card */}
+        <section className="bg-white rounded-3xl p-6 border-2 border-lab-wood/20 shadow-soft flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-4 text-center sm:text-left">
+            <div className="w-14 h-14 rounded-2xl bg-indigo-50 border-2 border-indigo-200 flex items-center justify-center text-3xl shrink-0">
+              🎓
+            </div>
+            <div>
+              <div className="flex items-center gap-2 justify-center sm:justify-start">
+                <span className="text-base font-black text-text-dark">{childName}</span>
+                <span className="text-xs font-black text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-200">
+                  {childGrade}
+                </span>
+              </div>
+              <p className="text-xs text-text-muted mt-1">
+                Passions: {childInterests.length > 0 ? childInterests.slice(0, 5).join(", ") + "..." : "Space, Robotics, Chemistry"}
+              </p>
+            </div>
+          </div>
+
+          <Link
+            href="/onboarding"
+            className="text-xs font-black text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-4 py-2 rounded-xl border border-indigo-200 transition-colors"
+          >
+            Customize 30+ Passions ➔
+          </Link>
+        </section>
+
+        {/* Diagnostic Metrics Bar */}
         <section className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
           <div className="bg-white rounded-2xl p-4 border border-lab-wood/15 shadow-soft flex items-center gap-3.5">
             <div className="w-12 h-12 rounded-xl bg-pip-blue/10 flex items-center justify-center text-pip-blue text-xl font-black shrink-0">
@@ -202,216 +328,77 @@ export default function ParentDashboard() {
           </div>
 
           <div className="bg-white rounded-2xl p-4 border border-lab-wood/15 shadow-soft flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-xl bg-hint-yellow/15 flex items-center justify-center text-earth-brown text-xl font-black shrink-0">
+            <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center text-purple-700 text-xl font-black shrink-0">
               <Activity size={22} />
             </div>
             <div>
-              <p className="text-2xl font-black text-text-dark">{totalAttempts}</p>
+              <p className="text-2xl font-black text-purple-900">{totalAttempts}</p>
               <p className="text-[11px] font-bold text-text-muted uppercase tracking-wider">Total Tests Run</p>
             </div>
           </div>
         </section>
 
-        {/* Dynamic Natural Language Summary Section */}
+        {/* Dynamic Natural Language Summary */}
         <section className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-lab-wood/20 shadow-soft">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">🧠</span>
-              <h2 className="text-lg sm:text-xl font-extrabold text-text-dark">
-                What Your Child Understands
+          <div className="flex items-center justify-between mb-4 pb-3 border-b border-lab-wood/15">
+            <div className="flex items-center gap-2.5">
+              <Sparkles className="text-amber-500 w-5 h-5" />
+              <h2 className="text-lg font-black text-text-dark">
+                AI Cognitive Summary for Parents
               </h2>
             </div>
-            <span className="text-[11px] font-bold text-pip-blue bg-pip-blue/10 px-3 py-1 rounded-full">
-              Live Diagnostic Analysis
+            <span className="text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-0.5 rounded-full">
+              Live Evaluation
             </span>
           </div>
 
-          {generateDynamicInsights()}
-        </section>
-
-        {/* Real Concept Mastery Breakdown */}
-        <section className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-lab-wood/20 shadow-soft">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">📊</span>
-              <h2 className="text-lg sm:text-xl font-extrabold text-text-dark">
-                Concept Mastery Breakdown
-              </h2>
-            </div>
-            <span className="text-xs text-text-muted font-semibold">
-              Grade 8 NCERT Materials Curriculum
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            {conceptsArray.map((concept) => {
-              const attempts = concept.attempts || 0;
-              const correct = concept.correctAttempts || 0;
-              const isMastered = concept.mastery === "mastered" || (attempts >= 2 && correct / attempts >= 0.75);
-              const isDeveloping = concept.mastery === "understood" || concept.mastery === "developing";
-              const isStruggling = attempts > 0 && correct / attempts < 0.5;
-
-              return (
-                <div
-                  key={concept.id}
-                  className={`p-4 rounded-2xl border transition-all flex items-start justify-between gap-3 ${
-                    isMastered
-                      ? "bg-nature-green/6 border-nature-green/25"
-                      : isDeveloping
-                      ? "bg-factory-orange/6 border-factory-orange/25"
-                      : isStruggling
-                      ? "bg-fire-red/6 border-fire-red/25"
-                      : "bg-lab-chalk/40 border-lab-wood/15 opacity-70"
-                  }`}
-                >
-                  <div>
-                    <h3 className="font-extrabold text-sm text-text-dark capitalize">
-                      {concept.title || concept.id.replace(/_/g, " ")}
-                    </h3>
-                    <p className="text-xs text-text-muted mt-0.5 leading-relaxed">
-                      {concept.simpleExplanation || "Core material science concept."}
-                    </p>
-                    <div className="mt-2 flex items-center gap-2 text-[11px] text-text-muted font-bold">
-                      <span>Attempts: {attempts}</span>
-                      <span>•</span>
-                      <span>Correct: {correct}</span>
-                    </div>
-                  </div>
-
-                  <span
-                    className={`shrink-0 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider ${
-                      isMastered
-                        ? "bg-nature-green/15 text-nature-green-dark"
-                        : isDeveloping
-                        ? "bg-factory-orange/15 text-factory-orange-dark"
-                        : isStruggling
-                        ? "bg-fire-red/15 text-fire-red"
-                        : "bg-lab-chalk text-text-light"
-                    }`}
-                  >
-                    {isMastered ? "Strong ✓" : isDeveloping ? "Developing ◐" : isStruggling ? "Practice ○" : "Not Started"}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* Real Live Activity Log */}
-        {state.activityLog && state.activityLog.length > 0 && (
-          <section className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-lab-wood/20 shadow-soft">
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">📜</span>
-                <h2 className="text-lg sm:text-xl font-extrabold text-text-dark">
-                  Recent Learning Activity & Observations
-                </h2>
-              </div>
-              <span className="text-xs text-text-muted font-semibold">
-                Last {state.activityLog.length} actions
-              </span>
-            </div>
-
-            <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
-              {state.activityLog.slice(0, 10).map((log: ActivityLogEntry) => (
-                <div
-                  key={log.id}
-                  className="flex items-center justify-between p-3 rounded-xl bg-lab-chalk/60 border border-lab-wood/15 text-xs"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className={`text-base ${log.isCorrect ? "text-nature-green" : "text-factory-orange"}`}>
-                      {log.isCorrect ? "✅" : "💡"}
-                    </span>
-                    <div>
-                      <p className="font-extrabold text-text-dark">{log.conceptName}</p>
-                      <p className="text-text-muted text-[11px]">{log.note}</p>
-                    </div>
-                  </div>
-
-                  <span className="text-[10px] text-text-light shrink-0 font-medium">
-                    {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Offline Home Activities */}
-        <section className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-lab-wood/20 shadow-soft">
-          <div className="mb-6">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">🏠</span>
-              <h2 className="text-lg sm:text-xl font-extrabold text-text-dark">
-                5-Minute Offline Science Activities
-              </h2>
-            </div>
-            <p className="text-xs text-text-muted mt-1">
-              Quick, meaningful parent-child questions to connect screen learning to the physical world.
+          <div className="space-y-3 text-text-dark text-xs sm:text-sm leading-relaxed">
+            <p className="font-bold">
+              {strong.length > 0 
+                ? `${childName} shows strong confidence in ${strong.map(s => `"${s.title}"`).slice(0, 3).join(', ')}.`
+                : `${childName} is currently exploring foundational materials science concepts.`}
             </p>
+            {developing.length > 0 && (
+              <p className="text-text-muted">
+                Developing concepts: {developing.map(d => d.title).join(", ")}.
+              </p>
+            )}
+            {needsPractice.length > 0 && (
+              <p className="text-rose-700 font-semibold">
+                Needs practice: {needsPractice.map(n => n.title).join(", ")}.
+              </p>
+            )}
+          </div>
+        </section>
+
+        {/* Recommended 5-Minute Home Conversations */}
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-black text-text-dark flex items-center gap-2">
+              <BookOpen size={20} className="text-pip-blue" />
+              <span>Recommended 5-Minute Home Experiments</span>
+            </h2>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {HOME_ACTIVITIES.map((act) => (
+            {HOME_ACTIVITIES.map((act, i) => (
               <div
-                key={act.title}
-                className="p-5 rounded-2xl bg-gradient-to-b from-white to-lab-warm/30 border border-lab-wood/20 shadow-xs flex flex-col justify-between gap-3"
+                key={i}
+                className="bg-white p-5 rounded-2xl border border-lab-wood/20 shadow-xs space-y-2 text-left"
               >
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-3xl">{act.emoji}</span>
-                    <span className="text-[10px] font-extrabold px-2 py-0.5 bg-lab-chalk text-text-dark rounded-full border border-lab-wood/20">
-                      ⏱️ {act.time}
-                    </span>
-                  </div>
-                  <h3 className="font-extrabold text-sm text-text-dark mb-1">
-                    {act.title}
-                  </h3>
-                  <p className="text-xs text-text-muted leading-relaxed">
-                    {act.description}
-                  </p>
+                <div className="flex items-center justify-between">
+                  <span className="text-2xl">{act.emoji}</span>
+                  <span className="text-[10px] font-bold text-text-muted bg-lab-chalk px-2 py-0.5 rounded">
+                    {act.time}
+                  </span>
                 </div>
-
-                <div className="pt-2 border-t border-lab-wood/10 text-[10px] font-bold text-pip-blue-dark">
-                  Target: {act.relevantConcept}
-                </div>
+                <h3 className="font-black text-sm text-text-dark">{act.title}</h3>
+                <p className="text-xs text-text-muted leading-relaxed">{act.description}</p>
+                <span className="inline-block text-[10px] font-black text-pip-blue bg-pip-blue/10 px-2 py-0.5 rounded">
+                  Concept: {act.relevantConcept}
+                </span>
               </div>
             ))}
-          </div>
-        </section>
-
-        {/* Tester & Parent Tools: Simulate / Reset Live Progress */}
-        <section className="bg-lab-chalk rounded-2xl p-4 border border-lab-wood/20 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
-          <div>
-            <p className="text-xs font-extrabold text-text-dark">
-              Diagnostic Data Management
-            </p>
-            <p className="text-[11px] text-text-muted">
-              Data is saved securely in your browser cache and updates in real time.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => {
-                playClickSound();
-                seedSampleData();
-              }}
-              className="px-3.5 py-1.5 rounded-xl bg-white border border-lab-wood/30 hover:bg-lab-warm text-text-dark text-xs font-bold transition-all shadow-xs"
-              title="Populate realistic child gameplay data"
-            >
-              🎮 Simulate Child Progress
-            </button>
-            <button
-              onClick={() => {
-                playPopSound();
-                resetProgress();
-              }}
-              className="px-3.5 py-1.5 rounded-xl bg-white border border-fire-red/30 hover:bg-fire-red/10 text-fire-red text-xs font-bold transition-all shadow-xs"
-              title="Clear all saved progress"
-            >
-              🔄 Reset Data
-            </button>
           </div>
         </section>
 

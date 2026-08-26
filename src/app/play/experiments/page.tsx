@@ -3,21 +3,22 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { logChildAttempt } from '@/lib/learning-engine';
 import { playDiscoverySound, playPopSound, playClickSound, speak } from '@/lib/audio-manager';
 import { KidTermTooltip } from '@/components/learning/KidTermTooltip';
-import { Sparkles, Dumbbell, ShoppingBag, Lightbulb, ArrowLeft, ArrowRight, RotateCcw } from 'lucide-react';
+import { SentenceVoiceReader } from '@/components/learning/SentenceVoiceReader';
+import { ParentPinGateModal } from '@/components/learning/ParentPinGateModal';
+import { Sparkles, Dumbbell, ShoppingBag, Lightbulb, ArrowLeft, ArrowRight, RotateCcw, Lock } from 'lucide-react';
 
 export default function ExperimentsMission() {
   const [activeTab, setActiveTab] = useState<'nylon' | 'polyester'>('nylon');
-  
-  // Nylon Test State
   const [predicted, setPredicted] = useState<string | null>(null);
   const [weight, setWeight] = useState(0);
   const [testComplete, setTestComplete] = useState(false);
-  
-  // Polyester Shop State
   const [inspectedItems, setInspectedItems] = useState<string[]>([]);
+  const [showPinGate, setShowPinGate] = useState(false);
+  const router = useRouter();
 
   // Load session state
   useEffect(() => {
@@ -73,6 +74,16 @@ export default function ExperimentsMission() {
       sessionStorage.removeItem("polyquest-experiments-pred");
       sessionStorage.removeItem("polyquest-experiments-complete");
     } catch {}
+    speak("Nylon weight test reset! Choose your prediction to test tensile strength!");
+  };
+
+  const resetPolyesterTest = () => {
+    playPopSound();
+    setInspectedItems([]);
+    try {
+      sessionStorage.removeItem("polyquest-experiments-inspected");
+    } catch {}
+    speak("Polyester shop reset! Tap each item to inspect its scientific reason!");
   };
 
   const handleAddWeight = () => {
@@ -123,6 +134,18 @@ export default function ExperimentsMission() {
     }
   };
 
+  const isCompleted = testComplete || inspectedItems.length >= 3;
+
+  const handleNextClick = () => {
+    if (!isCompleted) {
+      playPopSound();
+      setShowPinGate(true);
+    } else {
+      playClickSound();
+      router.push("/play/safety");
+    }
+  };
+
   const polyesterItems = [
     { 
       id: 'raincoat', 
@@ -140,7 +163,7 @@ export default function ExperimentsMission() {
     },
     { 
       id: 'dress', 
-      name: 'Dress & Shirts', 
+      name: 'Dress & Uniform', 
       emoji: '👗', 
       property: 'Wrinkle-Resistant',
       reason: 'Polymer chains have elastic memory and spring right back into shape without creases!'
@@ -155,7 +178,7 @@ export default function ExperimentsMission() {
   ];
 
   return (
-    <div className="min-h-screen bg-lab-chalk font-nunito p-6 sm:p-8 flex flex-col">
+    <div className="min-h-screen bg-lab-chalk font-nunito p-6 sm:p-8 flex flex-col justify-between">
       <header className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-8">
         <div className="flex items-center gap-3">
           <Link
@@ -164,7 +187,7 @@ export default function ExperimentsMission() {
             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-lab-cream text-text-dark font-extrabold text-xs border border-lab-wood/20 shadow-xs transition-all"
           >
             <ArrowLeft size={14} />
-            <span>← Back to Mission 2 (Fibres)</span>
+            <span>← Mission 2 (Fibres)</span>
           </Link>
 
           <div>
@@ -177,30 +200,41 @@ export default function ExperimentsMission() {
           </div>
         </div>
 
-        <div className="flex bg-lab-cream p-1 rounded-2xl border border-lab-wood-light shadow-xs">
-          <button 
-            onClick={() => switchTab('nylon')}
-            className={`px-5 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2 ${
-              activeTab === 'nylon' 
-                ? 'bg-white shadow-soft text-pip-blue' 
-                : 'text-text-muted hover:text-text-dark'
-            }`}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={activeTab === 'nylon' ? resetNylonTest : resetPolyesterTest}
+            className="px-3.5 py-2 rounded-xl bg-white hover:bg-lab-cream text-text-dark font-extrabold text-xs border border-lab-wood/20 shadow-xs transition-all flex items-center gap-1.5"
+            title="Redo Current Experiment"
           >
-            <Dumbbell size={16} />
-            <span>Nylon Strength Test</span>
+            <RotateCcw size={13} />
+            <span>Redo Test 🔄</span>
           </button>
 
-          <button 
-            onClick={() => switchTab('polyester')}
-            className={`px-5 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2 ${
-              activeTab === 'polyester' 
-                ? 'bg-white shadow-soft text-factory-orange' 
-                : 'text-text-muted hover:text-text-dark'
-            }`}
-          >
-            <ShoppingBag size={16} />
-            <span>Polyester Shop</span>
-          </button>
+          <div className="flex bg-lab-cream p-1 rounded-2xl border border-lab-wood-light shadow-xs">
+            <button 
+              onClick={() => switchTab('nylon')}
+              className={`px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${
+                activeTab === 'nylon' 
+                  ? 'bg-white shadow-soft text-pip-blue' 
+                  : 'text-text-muted hover:text-text-dark'
+              }`}
+            >
+              <Dumbbell size={15} />
+              <span>Nylon Strength</span>
+            </button>
+
+            <button 
+              onClick={() => switchTab('polyester')}
+              className={`px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${
+                activeTab === 'polyester' 
+                  ? 'bg-white shadow-soft text-factory-orange' 
+                  : 'text-text-muted hover:text-text-dark'
+              }`}
+            >
+              <ShoppingBag size={15} />
+              <span>Polyester Shop</span>
+            </button>
+          </div>
         </div>
       </header>
 
@@ -236,7 +270,11 @@ export default function ExperimentsMission() {
                   onClick={() => handlePredict('nylon')}
                   className="bg-white p-8 rounded-3xl border-4 border-pip-blue hover:border-pip-blue-dark shadow-soft flex flex-col items-center gap-3 transition-all hover:scale-105"
                 >
-                  <span className="text-6xl">🧵</span>
+                  <img
+                    src="/images/nylon_climbing_rope.jpg"
+                    alt="Nylon"
+                    className="w-24 h-24 rounded-2xl object-cover shadow-soft"
+                  />
                   <span className="text-xl font-extrabold text-pip-blue-dark">Nylon Thread</span>
                   <span className="text-xs text-text-muted"><KidTermTooltip term="synthetic" displayText="Synthetic" /> <KidTermTooltip term="polymer" displayText="polymer" /></span>
                 </button>
@@ -244,7 +282,6 @@ export default function ExperimentsMission() {
             ) : (
               <div className="bg-white p-6 sm:p-8 rounded-3xl w-full shadow-soft border-2 border-lab-wood/25 flex flex-col items-center">
                 
-                {/* Back to Prediction / Reset Step Button */}
                 <div className="w-full flex justify-between items-center mb-4">
                   <button
                     onClick={resetNylonTest}
@@ -327,16 +364,20 @@ export default function ExperimentsMission() {
                     </button>
                   ) : (
                     <div className="space-y-4 w-full">
-                      {/* Science Reasoning Card */}
                       <div className="bg-pip-blue/10 border-2 border-pip-blue p-5 rounded-2xl w-full text-left">
                         <div className="flex items-center gap-2 text-pip-blue-dark font-extrabold text-sm mb-1.5">
                           <Lightbulb size={18} />
                           <span>Scientific Reasoning: Why is Nylon so Strong?</span>
                         </div>
                         <p className="text-xs text-text-dark leading-relaxed">
-                          Nylon molecules are long, linear synthetic <KidTermTooltip term="polymer" displayText="polymer chains" /> aligned perfectly parallel to each other. Strong intermolecular forces (hydrogen bonds) lock the chains together, giving nylon exceptional <KidTermTooltip term="tensile strength" displayText="tensile strength" />. That&apos;s why it is used in parachutes, climbing ropes, and heavy-duty toothbrush bristles!
+                          Nylon molecules are long, linear synthetic <KidTermTooltip term="polymer" displayText="polymer chains" /> aligned perfectly parallel to each other. Strong intermolecular forces lock the chains together, giving nylon exceptional <KidTermTooltip term="tensile strength" displayText="tensile strength" />. That&apos;s why it is used in parachutes, climbing ropes, and toothbrush bristles!
                         </p>
                       </div>
+
+                      <SentenceVoiceReader
+                        sentence="A nylon thread is stronger and more elastic than steel wire of the same thickness!"
+                        conceptTitle="Nylon Science"
+                      />
                     </div>
                   )}
                 </div>
@@ -350,7 +391,6 @@ export default function ExperimentsMission() {
             ============================================================ */}
         {activeTab === 'polyester' && (
           <div className="w-full flex flex-col items-center">
-            {/* Pip Intro */}
             <div className="speech-bubble bg-white p-5 rounded-2xl shadow-soft border-2 border-lab-wood/30 mb-8 w-full text-center">
               <p className="text-base sm:text-lg font-extrabold text-text-dark">
                 {inspectedItems.length === 4 
@@ -394,19 +434,26 @@ export default function ExperimentsMission() {
             </div>
 
             {inspectedItems.length === 4 && (
-              <motion.div 
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-8 bg-white border-2 border-factory-orange p-6 rounded-3xl w-full shadow-soft text-left"
-              >
-                <div className="flex items-center gap-2 text-factory-orange-dark font-extrabold text-base mb-2">
-                  <Lightbulb size={18} />
-                  <span>The Science of Polyester (PET)</span>
-                </div>
-                <p className="text-xs text-text-dark leading-relaxed">
-                  Polyester fibres have very low moisture absorbency. Water cannot penetrate into the compact synthetic <KidTermTooltip term="polymer" displayText="polymer structure" />, so droplets simply roll off (water resistance) and sweat dries rapidly in minutes!
-                </p>
-              </motion.div>
+              <div className="w-full space-y-4 mt-8">
+                <motion.div 
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-white border-2 border-factory-orange p-6 rounded-3xl w-full shadow-soft text-left"
+                >
+                  <div className="flex items-center gap-2 text-factory-orange-dark font-extrabold text-base mb-2">
+                    <Lightbulb size={18} />
+                    <span>The Science of Polyester (PET)</span>
+                  </div>
+                  <p className="text-xs text-text-dark leading-relaxed">
+                    Polyester fibres do not absorb water. Moisture stays on the outside and evaporates in minutes, and the elastic polymer structure springs back without wrinkles!
+                  </p>
+                </motion.div>
+
+                <SentenceVoiceReader
+                  sentence="Polyester fabric is wrinkle-free, durable, and dries rapidly!"
+                  conceptTitle="Polyester Science"
+                />
+              </div>
             )}
           </div>
         )}
@@ -421,15 +468,26 @@ export default function ExperimentsMission() {
           <ArrowLeft size={14} />
           <span>Back to Mission 2</span>
         </Link>
-        <Link 
-          href="/play/safety" 
-          onClick={() => playClickSound()}
-          className="px-6 py-2.5 bg-nature-green text-white font-bold rounded-xl hover:bg-nature-green-dark transition-colors shadow-soft text-xs flex items-center gap-1.5"
+        <button 
+          onClick={handleNextClick}
+          className={`px-6 py-2.5 rounded-xl font-bold transition-all shadow-soft text-xs flex items-center gap-1.5 ${
+            isCompleted
+              ? "bg-nature-green hover:bg-nature-green-dark text-white cursor-pointer"
+              : "bg-gray-300 text-gray-700 cursor-not-allowed"
+          }`}
         >
           <span>Next: Safety & Flame Tests →</span>
-          <ArrowRight size={14} />
-        </Link>
+          {!isCompleted ? <Lock size={13} className="text-gray-600" /> : <ArrowRight size={14} />}
+        </button>
       </footer>
+
+      {/* Parent PIN Lock Gate Modal */}
+      <ParentPinGateModal
+        isOpen={showPinGate}
+        onClose={() => setShowPinGate(false)}
+        onUnlockSuccess={() => router.push("/play/safety")}
+        activityTitle="Mission 3: Tensile Strength & Polyester Test"
+      />
     </div>
   );
 }
