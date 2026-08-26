@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { ArrowRight, ArrowLeft, RotateCcw, Sparkles, CheckCircle2, Lock, Lightbulb } from 'lucide-react';
 import { KidTermTooltip } from '@/components/learning/KidTermTooltip';
 import { SentenceVoiceReader } from '@/components/learning/SentenceVoiceReader';
 import { ParentPinGateModal } from '@/components/learning/ParentPinGateModal';
