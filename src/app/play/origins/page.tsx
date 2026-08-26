@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { VoiceUnlockModal } from "@/components/learning/VoiceUnlockModal";
-import { Sparkles, Mic, Lightbulb, CheckCircle2, AlertCircle } from "lucide-react";
+import { KidTermTooltip } from "@/components/learning/KidTermTooltip";
+import { Sparkles, Mic, Lightbulb, CheckCircle2, AlertCircle, ArrowLeft } from "lucide-react";
 import { logChildAttempt, logMissionCompleted } from "@/lib/learning-engine";
-import { playDiscoverySound, playPopSound, playWarningSound, speak } from "@/lib/audio-manager";
+import { playDiscoverySound, playPopSound, playWarningSound, playClickSound, speak } from "@/lib/audio-manager";
 
 // === LEARNING LOOP ===
 // SEE objects → PREDICT (sort them) → INTERACT (drag) → OBSERVE (results) →
@@ -63,6 +64,33 @@ export default function OriginsPage() {
   const [selectedItem, setSelectedItem] = useState<MaterialItem | null>(null);
   const [showVoiceModal, setShowVoiceModal] = useState(false);
   const router = useRouter();
+
+  // Load saved phase on refresh
+  useEffect(() => {
+    try {
+      const savedPhase = sessionStorage.getItem("polyquest-origins-phase");
+      if (savedPhase && ["inspect", "sorting", "concept", "exam-bridge"].includes(savedPhase)) {
+        setPhase(savedPhase as Phase);
+      }
+    } catch {}
+  }, []);
+
+  // Save phase on change
+  const changePhase = (nextPhase: Phase) => {
+    playClickSound();
+    setPhase(nextPhase);
+    try {
+      sessionStorage.setItem("polyquest-origins-phase", nextPhase);
+    } catch {}
+  };
+
+  // Back step navigation
+  const goBackStep = () => {
+    playClickSound();
+    if (phase === "sorting") changePhase("inspect");
+    else if (phase === "concept") changePhase("sorting");
+    else if (phase === "exam-bridge") changePhase("concept");
+  };
 
   const inspectObject = useCallback((label: string) => {
     setInspectedObjects((prev) => new Set(prev).add(label));
@@ -207,19 +235,19 @@ export default function OriginsPage() {
                       Everything around you is made from some kind of material!
                     </p>
                   </div>
-                  <motion.button
-                    onClick={() => setPhase("sorting")}
-                    className="px-8 py-3 bg-pip-blue text-white font-bold rounded-lg shadow-soft text-lg"
-                    whileHover={{ scale: 1.03, y: -2 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    But where do materials come from? →
-                  </motion.button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
-        )}
+                    <motion.button
+                      onClick={() => changePhase("sorting")}
+                      className="px-8 py-3 bg-pip-blue text-white font-bold rounded-lg shadow-soft text-lg"
+                      whileHover={{ scale: 1.03, y: -2 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      Where do materials come from? Sort them! →
+                    </motion.button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          )}
 
         {/* ========== PHASE 2: SORTING — Nature vs Factory ========== */}
         {phase === "sorting" && (
@@ -229,6 +257,21 @@ export default function OriginsPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
           >
+            {/* Top Navigation & Back to Inspect */}
+            <div className="flex items-center justify-between mb-4">
+              <button
+                onClick={goBackStep}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-lab-chalk text-text-dark font-extrabold text-xs border border-lab-wood/20 shadow-xs transition-all"
+              >
+                <ArrowLeft size={14} />
+                <span>← Back to Object Inspection</span>
+              </button>
+
+              <span className="text-xs font-black text-pip-blue bg-pip-blue/10 px-3 py-1 rounded-full">
+                Step 2 of 4: Sorting Lab
+              </span>
+            </div>
+
             {/* Pip prompt */}
             <div className="text-center mb-6">
               <h1 className="text-2xl sm:text-3xl font-extrabold text-text-dark mb-2">
@@ -236,8 +279,7 @@ export default function OriginsPage() {
               </h1>
               <div className="speech-bubble mx-auto">
                 <p className="text-base">
-                  Some materials come from nature. Others are made by people
-                  in factories. Can you sort them?
+                  Some materials come from <KidTermTooltip term="natural" displayText="Nature" />. Others are <KidTermTooltip term="synthetic" displayText="Synthetic" /> (made by people in factories). Can you sort them?
                 </p>
               </div>
             </div>
@@ -466,12 +508,12 @@ export default function OriginsPage() {
                   </p>
                 )}
                 <motion.button
-                  onClick={() => setPhase("concept")}
+                  onClick={() => changePhase("concept")}
                   className="px-8 py-3 bg-pip-blue text-white font-bold rounded-lg shadow-soft text-lg"
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  Discover the secret →
+                  Discover the secret science →
                 </motion.button>
               </motion.div>
             )}
@@ -487,6 +529,21 @@ export default function OriginsPage() {
             exit={{ opacity: 0, y: -20 }}
             className="max-w-2xl mx-auto"
           >
+            {/* Top Navigation & Back Button */}
+            <div className="flex items-center justify-between mb-6">
+              <button
+                onClick={goBackStep}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-lab-chalk text-text-dark font-extrabold text-xs border border-lab-wood/20 shadow-xs transition-all"
+              >
+                <ArrowLeft size={14} />
+                <span>← Back to Sorting Lab</span>
+              </button>
+
+              <span className="text-xs font-black text-pip-blue bg-pip-blue/10 px-3 py-1 rounded-full">
+                Step 3 of 4: Science Concepts
+              </span>
+            </div>
+
             <h1 className="text-2xl sm:text-3xl font-extrabold text-text-dark text-center mb-8">
               The Two Kinds of Materials
             </h1>
@@ -503,10 +560,10 @@ export default function OriginsPage() {
                   <span className="text-3xl">🌳</span>
                   <div>
                     <h2 className="text-xl font-bold text-nature-green-dark">
-                      Natural Material
+                      <KidTermTooltip term="natural" displayText="Natural Material" />
                     </h2>
                     <p className="text-sm text-text-muted">
-                      Comes from nature
+                      Comes directly from nature
                     </p>
                   </div>
                 </div>
@@ -539,7 +596,7 @@ export default function OriginsPage() {
                   <span className="text-3xl">🏭</span>
                   <div>
                     <h2 className="text-xl font-bold text-factory-orange-dark">
-                      Synthetic Material
+                      <KidTermTooltip term="synthetic" displayText="Synthetic Material" />
                     </h2>
                     <p className="text-sm text-text-muted">
                       Made by people using chemicals
@@ -584,14 +641,14 @@ export default function OriginsPage() {
                   <span className="font-extrabold text-nature-green-dark block mb-1">
                     🌱 Why do Natural Fibres Breathe?
                   </span>
-                  Cotton and wool fibres have natural microscopic pores and hollow tubes. They absorb moisture and allow air flow, making them super breathable in hot weather!
+                  Cotton and wool fibres have natural microscopic pores and hollow tubes. They absorb moisture and allow air flow, making them <KidTermTooltip term="breathable" displayText="breathable" /> in hot weather!
                 </div>
 
                 <div className="bg-factory-orange/10 p-3.5 rounded-xl border border-factory-orange/20">
                   <span className="font-extrabold text-factory-orange-dark block mb-1">
                     ⚙️ Why are Synthetic Fibres so Tough?
                   </span>
-                  Synthetic fibres like nylon are formed by chaining thousands of small chemical molecules into unbroken polymer lines, giving them unmatched tensile strength!
+                  Synthetic fibres like nylon are formed by chaining thousands of small chemical <KidTermTooltip term="monomer" displayText="monomer" /> units into unbroken <KidTermTooltip term="polymer" displayText="polymer" /> chains, giving them unmatched <KidTermTooltip term="tensile strength" displayText="tensile strength" />!
                 </div>
               </div>
             </motion.div>
@@ -613,7 +670,7 @@ export default function OriginsPage() {
 
             <div className="text-center">
               <motion.button
-                onClick={() => setPhase("exam-bridge")}
+                onClick={() => changePhase("exam-bridge")}
                 className="px-8 py-3 bg-pip-blue text-white font-bold rounded-lg shadow-soft text-lg"
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.98 }}
@@ -633,6 +690,21 @@ export default function OriginsPage() {
             exit={{ opacity: 0, y: -20 }}
             className="max-w-xl mx-auto"
           >
+            {/* Top Navigation & Back Button */}
+            <div className="flex items-center justify-between mb-6">
+              <button
+                onClick={goBackStep}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-lab-chalk text-text-dark font-extrabold text-xs border border-lab-wood/20 shadow-xs transition-all"
+              >
+                <ArrowLeft size={14} />
+                <span>← Back to Science Concepts</span>
+              </button>
+
+              <span className="text-xs font-black text-pip-blue bg-pip-blue/10 px-3 py-1 rounded-full">
+                Step 4 of 4: Science Vocabulary
+              </span>
+            </div>
+
             <h1 className="text-2xl font-extrabold text-text-dark text-center mb-8">
               Say it Like a Scientist
             </h1>

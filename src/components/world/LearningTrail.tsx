@@ -4,7 +4,8 @@ import { motion } from "framer-motion";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Users, BookOpen, Compass, ArrowLeft } from "lucide-react";
+import { playClickSound } from "@/lib/audio-manager";
 
 const TRAIL_NODES = [
   { id: "origins", icon: "🌱", label: "Origins", route: "/play/origins" },
@@ -19,7 +20,7 @@ const TRAIL_NODES = [
 
 export function LearningTrail({
   completedMissions = [],
-  unlockedMissions = ["origins"],
+  unlockedMissions = ["origins", "fibres", "experiments", "safety", "plastic", "environment", "extras", "final-mission"],
 }: {
   completedMissions?: string[];
   unlockedMissions?: string[];
@@ -32,24 +33,35 @@ export function LearningTrail({
 
   return (
     <>
-      {/* Desktop Trail — horizontal sticky bar */}
+      {/* Desktop Trail — top navigation bar with Parent Portal button */}
       <div className="hidden md:block sticky top-0 z-40">
-        <div className="bg-white/90 backdrop-blur-sm border-b border-lab-wood/10">
-          <div className="max-w-4xl mx-auto px-4 py-2.5">
-            <div className="flex items-center justify-between">
-              {/* Home link */}
-              <Link
-                href="/play"
-                className="flex items-center gap-2 text-text-muted hover:text-text-dark transition-colors"
-              >
-                <span className="text-lg">🏠</span>
-                <span className="text-xs font-semibold uppercase tracking-wider">
-                  Materials Mystery
-                </span>
-              </Link>
+        <div className="bg-white/95 backdrop-blur-md border-b border-lab-wood/15 shadow-xs">
+          <div className="max-w-6xl mx-auto px-4 py-2.5">
+            <div className="flex items-center justify-between gap-4">
+              
+              {/* Chapter Badge & Back to Map */}
+              <div className="flex items-center gap-3">
+                <Link
+                  href="/play"
+                  onClick={() => playClickSound()}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-lab-chalk hover:bg-lab-warm text-text-dark font-extrabold text-xs border border-lab-wood/20 transition-all shadow-xs"
+                >
+                  <ArrowLeft size={14} />
+                  <span>Map</span>
+                </Link>
 
-              {/* Trail nodes */}
-              <div className="flex items-center gap-1">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-black text-pip-blue uppercase tracking-wider">
+                    Chapter 3 • Science Curriculum
+                  </span>
+                  <span className="text-xs font-black text-text-dark">
+                    Synthetic Fibres & Plastics
+                  </span>
+                </div>
+              </div>
+
+              {/* Trail nodes step indicator */}
+              <div className="flex items-center gap-1 bg-lab-chalk/70 p-1 rounded-2xl border border-lab-wood/15">
                 {TRAIL_NODES.map((node, i) => {
                   const isCompleted = completedMissions.includes(node.id);
                   const isCurrent = pathname.startsWith(node.route);
@@ -60,36 +72,36 @@ export function LearningTrail({
                     <div key={node.id} className="flex items-center">
                       {i > 0 && (
                         <div
-                          className={`w-4 h-0.5 mx-0.5 rounded-full transition-colors ${
+                          className={`w-3 h-0.5 mx-0.5 rounded-full transition-colors ${
                             isCompleted
                               ? "bg-success"
                               : i <= currentIndex
-                              ? "bg-pip-blue/30"
-                              : "bg-lab-chalk"
+                              ? "bg-pip-blue/40"
+                              : "bg-lab-wood-light/30"
                           }`}
                         />
                       )}
 
                       {isUnlocked ? (
-                        <Link href={node.route}>
+                        <Link href={node.route} onClick={() => playClickSound()}>
                           <motion.div
-                            className={`trail-node text-sm ${
-                              isCompleted
-                                ? "completed"
-                                : isCurrent
-                                ? "current"
-                                : "bg-white border-2 border-lab-wood/20 text-text-muted hover:border-pip-blue/30"
+                            className={`w-7 h-7 rounded-xl flex items-center justify-center text-xs transition-all ${
+                              isCurrent
+                                ? "bg-pip-blue text-white shadow-soft font-black scale-110"
+                                : isCompleted
+                                ? "bg-nature-green text-white font-bold"
+                                : "bg-white border border-lab-wood/20 text-text-muted hover:border-pip-blue/40"
                             }`}
-                            whileHover={{ scale: 1.1 }}
+                            whileHover={{ scale: 1.15 }}
                             whileTap={{ scale: 0.95 }}
-                            title={node.label}
+                            title={`Mission ${i + 1}: ${node.label}`}
                           >
                             {node.icon}
                           </motion.div>
                         </Link>
                       ) : (
                         <div
-                          className="trail-node locked text-sm opacity-50"
+                          className="w-7 h-7 rounded-xl flex items-center justify-center text-xs bg-lab-chalk text-text-light/50 border border-lab-wood/10 opacity-50"
                           title={`${node.label} (locked)`}
                         >
                           {node.icon}
@@ -100,96 +112,100 @@ export function LearningTrail({
                 })}
               </div>
 
-              {/* Discovery book */}
-              <Link
-                href="/play/discovery-book"
-                className="flex items-center gap-1.5 text-text-muted hover:text-text-dark transition-colors"
-              >
-                <span className="text-lg">📖</span>
-                <span className="text-xs font-semibold hidden lg:inline">
-                  My Book
-                </span>
-              </Link>
+              {/* Action Buttons: Discovery Book & Parent Portal */}
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/play/discovery-book"
+                  onClick={() => playClickSound()}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-lab-chalk text-text-dark font-extrabold text-xs border border-lab-wood/20 transition-all shadow-xs"
+                >
+                  <BookOpen size={14} className="text-pip-blue" />
+                  <span>My Book</span>
+                </Link>
+
+                {/* PARENT DASHBOARD BUTTON IN NAVIGATION BAR */}
+                <Link
+                  href="/parent"
+                  onClick={() => playClickSound()}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs shadow-soft transition-all"
+                  title="Switch to Parent Diagnostic Portal"
+                >
+                  <Users size={14} />
+                  <span>Parent Portal 👨‍👩‍👧</span>
+                </Link>
+              </div>
+
             </div>
           </div>
         </div>
       </div>
 
-      {/* Mobile Trail — compact collapsible indicator */}
+      {/* Mobile Trail — compact collapsible navbar with Parent Portal */}
       <div className="md:hidden sticky top-0 z-40">
-        <div className="bg-white/90 backdrop-blur-sm border-b border-lab-wood/10">
+        <div className="bg-white/95 backdrop-blur-md border-b border-lab-wood/15 shadow-xs px-4 py-2 flex items-center justify-between gap-2">
+          
+          <Link
+            href="/play"
+            onClick={() => playClickSound()}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-lab-chalk text-xs font-bold border border-lab-wood/20"
+          >
+            <ArrowLeft size={12} />
+            <span>Map</span>
+          </Link>
+
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="w-full px-4 py-2.5 flex items-center justify-between"
+            className="flex-1 px-2 py-1 flex items-center justify-center gap-1.5 text-xs font-extrabold text-text-dark"
           >
-            <div className="flex items-center gap-2">
-              <span className="text-lg">
-                {currentIndex >= 0 ? TRAIL_NODES[currentIndex].icon : "🏠"}
-              </span>
-              <div className="text-left">
-                <p className="text-xs text-text-muted font-medium">
-                  Mission {currentIndex >= 0 ? currentIndex + 1 : "—"} of{" "}
-                  {TRAIL_NODES.length}
-                </p>
-                <p className="text-sm font-semibold text-text-dark">
-                  {currentIndex >= 0
-                    ? TRAIL_NODES[currentIndex].label
-                    : "Materials Mystery"}
-                </p>
-              </div>
-            </div>
-            {isExpanded ? (
-              <ChevronUp size={18} className="text-text-muted" />
-            ) : (
-              <ChevronDown size={18} className="text-text-muted" />
-            )}
+            <span>{currentIndex >= 0 ? TRAIL_NODES[currentIndex].icon : "🌱"}</span>
+            <span>{currentIndex >= 0 ? TRAIL_NODES[currentIndex].label : "Chapter 3: Synthetic Fibres"}</span>
+            {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </button>
 
-          {/* Expanded mobile trail */}
-          {isExpanded && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="px-4 pb-3 border-t border-lab-chalk"
-            >
-              <div className="flex flex-wrap gap-2 pt-3">
-                {TRAIL_NODES.map((node) => {
-                  const isCompleted = completedMissions.includes(node.id);
-                  const isCurrent = pathname.startsWith(node.route);
-                  const isUnlocked =
-                    unlockedMissions.includes(node.id) || isCompleted;
-
-                  return isUnlocked ? (
-                    <Link
-                      key={node.id}
-                      href={node.route}
-                      onClick={() => setIsExpanded(false)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                        isCurrent
-                          ? "bg-pip-blue text-white"
-                          : isCompleted
-                          ? "bg-success/10 text-success"
-                          : "bg-lab-chalk text-text-muted hover:bg-lab-wood/10"
-                      }`}
-                    >
-                      <span>{node.icon}</span>
-                      <span>{node.label}</span>
-                    </Link>
-                  ) : (
-                    <span
-                      key={node.id}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-lab-chalk/50 text-text-light/50"
-                    >
-                      <span>{node.icon}</span>
-                      <span>{node.label}</span>
-                    </span>
-                  );
-                })}
-              </div>
-            </motion.div>
-          )}
+          {/* Mobile Parent Button */}
+          <Link
+            href="/parent"
+            onClick={() => playClickSound()}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-600 text-white text-xs font-extrabold shadow-xs"
+          >
+            <Users size={12} />
+            <span>Parents</span>
+          </Link>
         </div>
+
+        {/* Expanded mobile trail dropdown */}
+        {isExpanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="bg-white border-b border-lab-wood/15 px-4 py-3 shadow-medium"
+          >
+            <div className="flex flex-wrap gap-2">
+              {TRAIL_NODES.map((node) => {
+                const isCurrent = pathname.startsWith(node.route);
+                return (
+                  <Link
+                    key={node.id}
+                    href={node.route}
+                    onClick={() => {
+                      playClickSound();
+                      setIsExpanded(false);
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                      isCurrent
+                        ? "bg-pip-blue text-white shadow-soft"
+                        : "bg-lab-chalk text-text-dark hover:bg-lab-warm"
+                    }`}
+                  >
+                    <span>{node.icon}</span>
+                    <span>{node.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
       </div>
     </>
   );

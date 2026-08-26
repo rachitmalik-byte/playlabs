@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { Flame, Droplets, ArrowRight, ArrowLeft, AlertTriangle, ShieldCheck, CheckCircle2, Lightbulb } from 'lucide-react';
+import { Flame, Droplets, ArrowRight, ArrowLeft, AlertTriangle, ShieldCheck, CheckCircle2, Lightbulb, RotateCcw } from 'lucide-react';
 import { logChildAttempt } from '@/lib/learning-engine';
-import { playDiscoverySound, playWarningSound, speak } from '@/lib/audio-manager';
+import { playDiscoverySound, playWarningSound, playClickSound, playPopSound, speak } from '@/lib/audio-manager';
+import { KidTermTooltip } from '@/components/learning/KidTermTooltip';
 
 export default function SafetyMission() {
   const [activeTab, setActiveTab] = useState<'fire' | 'sweat'>('fire');
@@ -13,9 +14,45 @@ export default function SafetyMission() {
   const [sweatStage, setSweatStage] = useState<0 | 1 | 2>(0);
   const [draggedFabric, setDraggedFabric] = useState<string | null>(null);
 
+  // Load saved stages from session
+  useEffect(() => {
+    try {
+      const savedTab = sessionStorage.getItem("polyquest-safety-tab");
+      if (savedTab === 'fire' || savedTab === 'sweat') setActiveTab(savedTab);
+      const savedFire = sessionStorage.getItem("polyquest-safety-fire");
+      if (savedFire) setFireStage(Number(savedFire) as any);
+      const savedSweat = sessionStorage.getItem("polyquest-safety-sweat");
+      if (savedSweat) setSweatStage(Number(savedSweat) as any);
+    } catch {}
+  }, []);
+
+  const switchTab = (tab: 'fire' | 'sweat') => {
+    playClickSound();
+    setActiveTab(tab);
+    try {
+      sessionStorage.setItem("polyquest-safety-tab", tab);
+    } catch {}
+  };
+
+  const updateFireStage = (stage: 0 | 1 | 2 | 3) => {
+    playClickSound();
+    setFireStage(stage);
+    try {
+      sessionStorage.setItem("polyquest-safety-fire", String(stage));
+    } catch {}
+  };
+
+  const updateSweatStage = (stage: 0 | 1 | 2) => {
+    playClickSound();
+    setSweatStage(stage);
+    try {
+      sessionStorage.setItem("polyquest-safety-sweat", String(stage));
+    } catch {}
+  };
+
   const handleTestFabric = (fabric: string) => {
     setDraggedFabric(fabric);
-    setFireStage(2);
+    updateFireStage(2);
     if (fabric === 'cotton') {
       playDiscoverySound();
       speak("Look closely! The cotton fabric chars slowly and turns to soft grey ash without melting!");
@@ -32,63 +69,107 @@ export default function SafetyMission() {
   };
 
   return (
-    <div className="min-h-screen bg-lab-cream p-8 font-sans text-text-dark">
+    <div className="min-h-screen bg-lab-cream p-6 sm:p-8 font-sans text-text-dark">
       <div className="max-w-4xl mx-auto">
-        <header className="mb-8 flex justify-between items-center bg-lab-chalk p-4 rounded-xl shadow-sm border-2 border-lab-wood-light">
-          <div className="flex gap-4">
+        <header className="mb-6 flex flex-col sm:flex-row justify-between items-center gap-4 bg-lab-chalk p-4 rounded-2xl shadow-sm border-2 border-lab-wood-light">
+          <div className="flex items-center gap-3">
+            <Link
+              href="/play/experiments"
+              onClick={() => playClickSound()}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-lab-cream text-text-dark font-extrabold text-xs border border-lab-wood/20 shadow-xs transition-all"
+            >
+              <ArrowLeft size={14} />
+              <span>← Mission 3</span>
+            </Link>
+
+            <div>
+              <span className="text-[10px] font-black text-pip-blue uppercase tracking-wider block">
+                Chapter 3 • Critical Science Safety
+              </span>
+              <h1 className="text-base sm:text-lg font-black text-text-dark">
+                Mission 4: Fire Safety & Summer Sweat Lab
+              </h1>
+            </div>
+          </div>
+
+          <div className="flex gap-2 bg-white p-1 rounded-2xl border border-lab-wood/20 shadow-xs">
             <button
-              onClick={() => setActiveTab('fire')}
-              className={`px-6 py-2 rounded-full font-bold transition-colors ${
-                activeTab === 'fire' ? 'bg-fire-red text-white' : 'bg-lab-cream border-2 border-lab-wood'
+              onClick={() => switchTab('fire')}
+              className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 ${
+                activeTab === 'fire' ? 'bg-fire-red text-white shadow-soft' : 'text-text-muted hover:text-text-dark'
               }`}
             >
-              Fire Safety
+              <Flame size={14} />
+              <span>Fire Safety</span>
             </button>
             <button
-              onClick={() => setActiveTab('sweat')}
-              className={`px-6 py-2 rounded-full font-bold transition-colors ${
-                activeTab === 'sweat' ? 'bg-water-blue text-white' : 'bg-lab-cream border-2 border-lab-wood'
+              onClick={() => switchTab('sweat')}
+              className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 ${
+                activeTab === 'sweat' ? 'bg-water-blue text-white shadow-soft' : 'text-text-muted hover:text-text-dark'
               }`}
             >
-              Summer Sweat Test
+              <Droplets size={14} />
+              <span>Summer Sweat Test</span>
             </button>
           </div>
-          <div className="text-xl font-mono text-pip-blue-dark font-bold">Lab Station 3</div>
         </header>
 
-        <main className="bg-white rounded-3xl p-8 shadow-xl border-4 border-lab-wood">
+        <main className="bg-white rounded-3xl p-6 sm:p-8 shadow-soft border-2 border-lab-wood/25">
           {activeTab === 'fire' && (
-            <div className="space-y-8">
-              <div className="speech-bubble bg-pip-blue-light/20 p-6 rounded-2xl relative border-2 border-pip-blue-dark/20">
-                <p className="text-xl font-medium">
-                  Pip says: "We're getting ready for a festival with diyas and sparklers. Which clothes should we choose? Let's test them safely in the lab!"
-                </p>
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Flame className="w-7 h-7 text-fire-red" />
+                  <h2 className="text-xl sm:text-2xl font-black text-text-dark">Fire Safety Experience</h2>
+                </div>
+
+                {fireStage > 0 && (
+                  <button
+                    onClick={() => updateFireStage((fireStage - 1) as any)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-lab-chalk hover:bg-lab-warm text-text-dark font-extrabold text-xs border border-lab-wood/20 shadow-xs transition-all"
+                  >
+                    <ArrowLeft size={13} />
+                    <span>← Previous Step</span>
+                  </button>
+                )}
               </div>
 
               {fireStage === 0 && (
-                <div className="flex flex-col items-center justify-center space-y-8">
-                  <div className="flex gap-12">
-                    <motion.div
-                      whileHover={{ scale: 1.05 }}
-                      onClick={() => setFireStage(1)}
-                      className="cursor-pointer flex flex-col items-center bg-nature-green-light/20 p-6 rounded-xl border-2 border-nature-green"
+                <div className="space-y-6">
+                  <div className="speech-bubble">
+                    <p className="text-base text-text-dark font-medium">
+                      Pip says: &ldquo;We are getting ready for a festival! Should we choose cotton or synthetic clothes near sparklers and diyas?&rdquo;
+                    </p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 my-6">
+                    <motion.div 
+                      whileHover={{ scale: 1.02 }}
+                      className="border-2 border-nature-green/40 bg-nature-green/5 p-6 rounded-2xl flex flex-col items-center cursor-pointer shadow-xs"
                     >
-                      <div className="w-32 h-32 bg-lab-chalk flex items-center justify-center text-4xl mb-4 rounded-lg border-2 border-lab-wood-light">👕</div>
-                      <span className="font-bold text-lg">Cotton Shirt</span>
-                      <span className="text-sm text-text-muted mt-2">Natural Fiber</span>
+                      <span className="text-6xl mb-2">👕</span>
+                      <span className="font-extrabold text-base text-nature-green-dark">Cotton Shirt</span>
+                      <span className="text-xs text-text-muted mt-1"><KidTermTooltip term="natural" displayText="Natural plant fibre" /></span>
                     </motion.div>
                     
-                    <motion.div
-                      whileHover={{ scale: 1.05 }}
-                      onClick={() => setFireStage(1)}
-                      className="cursor-pointer flex flex-col items-center bg-factory-orange/20 p-6 rounded-xl border-2 border-factory-orange"
+                    <motion.div 
+                      whileHover={{ scale: 1.02 }}
+                      className="border-2 border-factory-orange/40 bg-factory-orange/5 p-6 rounded-2xl flex flex-col items-center cursor-pointer shadow-xs"
                     >
-                      <div className="w-32 h-32 bg-lab-chalk flex items-center justify-center text-4xl mb-4 rounded-lg border-2 border-lab-wood-light">🎽</div>
-                      <span className="font-bold text-lg">Synthetic Shirt</span>
-                      <span className="text-sm text-text-muted mt-2">Polyester</span>
+                      <span className="text-6xl mb-2">🎽</span>
+                      <span className="font-extrabold text-base text-factory-orange-dark">Synthetic (Polyester) Shirt</span>
+                      <span className="text-xs text-text-muted mt-1"><KidTermTooltip term="synthetic" displayText="Man-made polymer" /></span>
                     </motion.div>
                   </div>
-                  <p className="text-lg text-text-muted italic">Click on a fabric to investigate it.</p>
+
+                  <div className="text-center">
+                    <button 
+                      onClick={() => updateFireStage(1)}
+                      className="px-8 py-3.5 bg-fire-red hover:bg-red-600 active:scale-95 text-white font-black rounded-2xl shadow-soft transition-all text-sm"
+                    >
+                      Test Near Controlled Flame →
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -142,8 +223,8 @@ export default function SafetyMission() {
 
               {fireStage === 2 && (
                 <div className="flex flex-col items-center space-y-6">
-                  <div className="relative w-full max-w-md bg-lab-chalk p-8 rounded-xl border-4 border-lab-wood">
-                    <h3 className="text-2xl font-bold mb-6 text-center">Observation Step</h3>
+                  <div className="relative w-full max-w-md bg-lab-chalk p-8 rounded-3xl border-2 border-lab-wood shadow-soft">
+                    <h3 className="text-xl font-black mb-4 text-center">Observation Step</h3>
                     
                     {draggedFabric === 'cotton' ? (
                       <div className="flex flex-col items-center mb-6">
@@ -155,29 +236,35 @@ export default function SafetyMission() {
                         >
                           👕
                         </motion.div>
-                        <p className="font-bold text-lg text-center">It chars slowly and crumbles to ash.</p>
+                        <p className="font-bold text-base text-center text-nature-green-dark">
+                          It chars slowly and turns to soft grey ash without melting!
+                        </p>
                       </div>
                     ) : (
                       <div className="flex flex-col items-center mb-6">
                         <motion.div 
                           initial={{ scale: 1 }}
-                          animate={{ scale: 0.5, borderRadius: '50%', y: 20 }}
+                          animate={{ scale: 0.6, borderRadius: '50%', y: 15 }}
                           transition={{ duration: 2 }}
-                          className="text-6xl mb-4 bg-factory-orange rounded"
+                          className="text-6xl mb-4"
                         >
                           🎽
                         </motion.div>
-                        <p className="font-bold text-lg text-center">It shrinks, melts into a bead, and sticks!</p>
+                        <p className="font-bold text-base text-center text-fire-red">
+                          It shrinks, melts into a hot sticky bead, and adheres!
+                        </p>
                       </div>
                     )}
 
-                    <div className="space-y-4">
-                      <p className="font-bold">What happened?</p>
+                    <div className="space-y-3">
+                      <p className="font-bold text-xs text-text-muted text-center uppercase tracking-wider">What did you observe?</p>
                       <button 
-                        onClick={() => setFireStage(3)}
-                        className="w-full text-left p-4 rounded-lg border-2 border-lab-wood hover:bg-lab-cream transition-colors"
+                        onClick={() => updateFireStage(3)}
+                        className="w-full text-left p-4 rounded-2xl border-2 border-lab-wood bg-white hover:bg-lab-cream font-bold text-xs sm:text-sm transition-all shadow-xs"
                       >
-                        {draggedFabric === 'cotton' ? "The cotton burned slowly and turned to ash." : "The synthetic one melted and formed a sticky glob!"}
+                        {draggedFabric === 'cotton' 
+                          ? "✓ The cotton burned slowly and crumbled safely into ash." 
+                          : "⚠️ The synthetic fabric melted and formed a dangerous sticky bead!"}
                       </button>
                     </div>
                   </div>
@@ -186,31 +273,32 @@ export default function SafetyMission() {
 
               {fireStage === 3 && (
                 <motion.div 
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-fire-red-light/10 p-8 rounded-2xl border-2 border-fire-red/30 space-y-6"
+                  className="space-y-6"
                 >
-                  <div className="flex items-center gap-4 text-fire-red">
-                    <AlertTriangle className="w-8 h-8" />
-                    <h3 className="text-2xl font-bold">Important Safety Lesson</h3>
-                  </div>
-                  <p className="text-xl">
-                    Some synthetic fabrics <span className="science-term font-mono font-bold text-fire-red bg-white px-2 py-1 rounded">MELT ON HEATING</span> and the hot material can stick to skin, causing severe burns.
-                  </p>
-                  <div className="exam-bridge bg-white p-6 rounded-xl border-l-4 border-nature-green shadow-sm">
-                    <div className="flex items-start gap-4">
-                      <ShieldCheck className="w-8 h-8 text-nature-green flex-shrink-0" />
-                      <p className="font-mono text-lg">
-                        <strong>Lab Note:</strong> Always wear cotton clothes around open flames, diyas, sparklers, or when working in a kitchen or laboratory. Cotton is safer because it does not melt.
+                  <div className="bg-fire-red/10 border-2 border-fire-red/30 p-6 rounded-3xl flex items-start gap-4">
+                    <AlertTriangle className="w-8 h-8 text-fire-red shrink-0 mt-1" />
+                    <div>
+                      <h4 className="text-lg font-black text-fire-red">CRITICAL SAFETY RULE</h4>
+                      <p className="text-xs sm:text-sm text-text-dark mt-1 leading-relaxed">
+                        Synthetic fabrics (polyester, nylon, acrylic) <strong>MELT ON HEATING</strong>. If they catch fire, the hot melted plastic sticks to the skin, causing severe burns. That is why we should never wear synthetic clothes in kitchens or near festival fires!
                       </p>
                     </div>
                   </div>
-                  <div className="flex justify-center mt-6">
+
+                  <div className="exam-bridge bg-amber-50/70 border-2 border-lab-wood p-5 rounded-2xl">
+                    <p className="font-mono text-xs font-bold text-text-dark">
+                      Exam Key Point: Synthetic fibres melt on heating and stick to the body of the person wearing them. Therefore, cotton clothing is recommended when working with fire.
+                    </p>
+                  </div>
+
+                  <div className="text-center pt-2">
                     <button 
-                      onClick={() => { setFireStage(0); setDraggedFabric(null); }}
-                      className="px-6 py-2 bg-lab-wood text-white rounded-lg hover:bg-lab-wood-dark transition-colors"
+                      onClick={() => switchTab('sweat')}
+                      className="px-6 py-3 bg-water-blue hover:bg-blue-600 text-white font-extrabold rounded-2xl shadow-soft text-xs transition-all"
                     >
-                      Test Again
+                      Now Try the Summer Sweat Test →
                     </button>
                   </div>
                 </motion.div>
@@ -219,152 +307,125 @@ export default function SafetyMission() {
           )}
 
           {activeTab === 'sweat' && (
-            <div className="space-y-8">
-              <div className="flex justify-between items-center bg-water-blue-light/20 p-6 rounded-2xl border-2 border-water-blue/20">
-                <p className="text-xl font-medium">
-                  It's a hot sunny day! Which fabric will keep you more comfortable when you sweat?
-                </p>
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Droplets className="w-7 h-7 text-water-blue" />
+                  <h2 className="text-xl sm:text-2xl font-black text-text-dark">Summer Sweat Test</h2>
+                </div>
+
+                {sweatStage > 0 && (
+                  <button
+                    onClick={() => updateSweatStage((sweatStage - 1) as any)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-lab-chalk hover:bg-lab-warm text-text-dark font-extrabold text-xs border border-lab-wood/20 shadow-xs transition-all"
+                  >
+                    <ArrowLeft size={13} />
+                    <span>← Previous Step</span>
+                  </button>
+                )}
               </div>
 
               {sweatStage === 0 && (
-                <div className="flex justify-center gap-12">
-                  <div className="relative group cursor-pointer" onClick={() => setSweatStage(1)}>
-                    <div className="w-48 h-48 bg-lab-chalk rounded-2xl border-4 border-nature-green flex items-center justify-center text-6xl relative overflow-hidden">
-                      👕
-                      <div className="absolute inset-0 bg-nature-green/10 flex flex-col justify-end p-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <span className="font-bold text-center">Cotton</span>
-                      </div>
-                    </div>
+                <div className="space-y-6 text-center">
+                  <div className="speech-bubble mx-auto max-w-xl">
+                    <p className="text-base text-text-dark font-medium">
+                      Pip is feeling warm on a hot sunny day ☀️. Let&apos;s see how cotton and synthetic fabrics handle sweat!
+                    </p>
                   </div>
-                  <div className="relative group cursor-pointer" onClick={() => setSweatStage(1)}>
-                    <div className="w-48 h-48 bg-lab-chalk rounded-2xl border-4 border-factory-orange flex items-center justify-center text-6xl relative overflow-hidden">
-                      🎽
-                      <div className="absolute inset-0 bg-factory-orange/10 flex flex-col justify-end p-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <span className="font-bold text-center">Synthetic</span>
-                      </div>
-                    </div>
-                  </div>
+
+                  <div className="text-6xl my-6 animate-pulse">☀️ 🥵</div>
+
+                  <button 
+                    onClick={() => {
+                      updateSweatStage(1);
+                      playDiscoverySound();
+                      speak("Watch how sweat drops interact with both fabrics!");
+                    }}
+                    className="px-8 py-3.5 bg-water-blue hover:bg-blue-600 text-white font-black rounded-2xl shadow-soft transition-all text-sm"
+                  >
+                    Pour Water / Sweat Drops 💧
+                  </button>
                 </div>
               )}
 
               {sweatStage === 1 && (
-                <div className="flex flex-col items-center space-y-12 py-8">
-                  <div className="flex gap-16">
-                    {/* Cotton Test */}
-                    <div className="flex flex-col items-center">
-                      <h4 className="font-bold text-lg mb-4">Cotton Fabric</h4>
-                      <div className="relative">
-                        <motion.div 
-                          className="w-32 h-32 bg-lab-chalk rounded-lg border-2 border-lab-wood relative overflow-hidden"
-                          animate={{ backgroundColor: ['#F5F0E8', '#e0d8c8'] }}
-                          transition={{ delay: 1, duration: 2 }}
-                        >
-                          <div className="absolute inset-0 flex items-center justify-center text-5xl opacity-30">👕</div>
-                        </motion.div>
-                        <motion.div
-                          initial={{ y: -50, opacity: 0 }}
-                          animate={{ y: 20, opacity: [0, 1, 0] }}
-                          transition={{ duration: 1, repeat: 2 }}
-                          className="absolute top-0 left-1/2 -translate-x-1/2 text-water-blue"
-                        >
-                          <Droplets className="w-8 h-8 fill-water-blue" />
-                        </motion.div>
+                <div className="space-y-8">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    {/* Cotton */}
+                    <div className="border-2 border-water-blue/40 bg-blue-50/30 p-6 rounded-3xl flex flex-col items-center relative overflow-hidden">
+                      <span className="text-5xl mb-3">👕</span>
+                      <h4 className="font-extrabold text-base text-text-dark">Cotton</h4>
+                      <p className="text-xs text-text-muted mb-4"><KidTermTooltip term="breathable" displayText="Breathable & Absorbent" /></p>
+                      
+                      <div className="relative w-32 h-20 bg-emerald-100 rounded-2xl border-2 border-emerald-300 flex items-center justify-center p-2 text-center">
+                        <span className="text-xs font-bold text-emerald-800">Sweat absorbs into hollow pores!</span>
                       </div>
-                      <motion.p 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 3 }}
-                        className="mt-4 font-bold text-nature-green flex items-center gap-2"
-                      >
-                        <CheckCircle2 className="w-5 h-5" /> Absorbs water
-                      </motion.p>
                     </div>
 
-                    {/* Synthetic Test */}
-                    <div className="flex flex-col items-center">
-                      <h4 className="font-bold text-lg mb-4">Synthetic Fabric</h4>
-                      <div className="relative">
-                        <div className="w-32 h-32 bg-lab-chalk rounded-lg border-2 border-lab-wood relative flex items-center justify-center">
-                           <div className="absolute inset-0 flex items-center justify-center text-5xl opacity-30">🎽</div>
-                           <motion.div
-                            initial={{ scale: 0, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            transition={{ delay: 1, duration: 0.5 }}
-                            className="absolute z-10 grid grid-cols-2 gap-2"
-                           >
-                              <div className="w-3 h-3 rounded-full bg-water-blue shadow-sm" />
-                              <div className="w-4 h-4 rounded-full bg-water-blue shadow-sm" />
-                              <div className="w-2 h-2 rounded-full bg-water-blue shadow-sm" />
-                           </motion.div>
-                        </div>
-                        <motion.div
-                          initial={{ y: -50, opacity: 0 }}
-                          animate={{ y: 20, opacity: [0, 1, 0] }}
-                          transition={{ duration: 1, repeat: 2 }}
-                          className="absolute top-0 left-1/2 -translate-x-1/2 text-water-blue"
-                        >
-                          <Droplets className="w-8 h-8 fill-water-blue" />
-                        </motion.div>
+                    {/* Synthetic */}
+                    <div className="border-2 border-factory-orange/40 bg-orange-50/30 p-6 rounded-3xl flex flex-col items-center relative overflow-hidden">
+                      <span className="text-5xl mb-3">🎽</span>
+                      <h4 className="font-extrabold text-base text-text-dark">Synthetic</h4>
+                      <p className="text-xs text-text-muted mb-4"><KidTermTooltip term="synthetic" displayText="Hydrophobic Polymer" /></p>
+                      
+                      <div className="relative w-32 h-20 bg-amber-100 rounded-2xl border-2 border-amber-300 flex items-center justify-center p-2 text-center">
+                        <span className="text-xs font-bold text-amber-800">Sweat beads on surface & sticks!</span>
                       </div>
-                      <motion.p 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 3 }}
-                        className="mt-4 font-bold text-fire-red flex items-center gap-2"
-                      >
-                        <AlertTriangle className="w-5 h-5" /> Water beads on surface
-                      </motion.p>
                     </div>
                   </div>
 
-                  <motion.button
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 4 }}
-                    onClick={() => setSweatStage(2)}
-                    className="px-8 py-3 bg-pip-blue text-white font-bold rounded-xl shadow-md hover:bg-pip-blue-dark"
-                  >
-                    What does this mean?
-                  </motion.button>
+                  <div className="text-center">
+                    <button 
+                      onClick={() => {
+                        updateSweatStage(2);
+                        logChildAttempt('plastic_safety', true, 'Learned why cotton is preferred in summer for sweat absorption', 'safety');
+                      }}
+                      className="px-8 py-3.5 bg-nature-green hover:bg-nature-green-dark text-white font-black rounded-2xl shadow-soft transition-all text-sm"
+                    >
+                      See Summer Recommendation ✓
+                    </button>
+                  </div>
                 </div>
               )}
 
               {sweatStage === 2 && (
                 <motion.div 
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-water-blue-light/10 p-8 rounded-2xl border-2 border-water-blue/30 space-y-6"
+                  className="space-y-6"
                 >
-                  <p className="text-xl">
-                    Cotton absorbs sweat from your body, exposing it to the atmosphere for easy evaporation. This evaporation cools your body.
-                  </p>
-                  <div className="exam-bridge bg-white p-6 rounded-xl border-l-4 border-water-blue shadow-sm">
-                    <p className="font-mono text-lg">
-                      <strong>Exam Concept:</strong> We wear cotton clothes in summer because cotton is a good absorber of water. Synthetic clothes do not absorb sweat easily and make us feel hot and uncomfortable.
-                    </p>
+                  <div className="bg-nature-green/10 border-2 border-nature-green/30 p-6 rounded-3xl flex items-start gap-4">
+                    <ShieldCheck className="w-8 h-8 text-nature-green shrink-0 mt-1" />
+                    <div>
+                      <h4 className="text-lg font-black text-nature-green-dark">Why Cotton is Best for Summer</h4>
+                      <p className="text-xs sm:text-sm text-text-dark mt-1 leading-relaxed">
+                        Cotton is a <KidTermTooltip term="breathable" displayText="breathable" /> natural fabric. It absorbs body sweat and exposes it to air for quick cooling evaporation. Synthetic fabrics do not absorb sweat, making you feel sticky and trapped in heat!
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex justify-center mt-6">
+
+                  <div className="flex justify-between items-center pt-4 border-t border-lab-wood/15">
                     <button 
-                      onClick={() => setSweatStage(0)}
-                      className="px-6 py-2 bg-lab-wood text-white rounded-lg hover:bg-lab-wood-dark transition-colors"
+                      onClick={() => switchTab('fire')}
+                      className="text-text-muted hover:text-text-dark text-xs font-bold"
                     >
-                      Observe Again
+                      ← Back to Fire Safety
                     </button>
+
+                    <Link 
+                      href="/play/plastic"
+                      onClick={() => playClickSound()}
+                      className="px-6 py-2.5 bg-nature-green text-white font-extrabold rounded-xl hover:bg-nature-green-dark transition-all text-xs shadow-soft flex items-center gap-1.5"
+                    >
+                      <span>Next: Plastic & Power →</span>
+                      <ArrowRight size={14} />
+                    </Link>
                   </div>
                 </motion.div>
               )}
             </div>
           )}
         </main>
-
-        <footer className="mt-8 flex justify-between">
-          <Link href="/play" className="flex items-center gap-2 px-6 py-3 bg-lab-chalk rounded-xl font-bold hover:bg-lab-wood-light transition-colors">
-            <ArrowLeft className="w-5 h-5" /> Back to Map
-          </Link>
-          <Link href="/play/plastic" className="flex items-center gap-2 px-6 py-3 bg-pip-blue text-white rounded-xl font-bold hover:bg-pip-blue-dark transition-colors shadow-md">
-            Next: Plastic & Power <ArrowRight className="w-5 h-5" />
-          </Link>
-        </footer>
       </div>
     </div>
   );
