@@ -284,6 +284,7 @@ export default function FibresMission() {
 
       <VoiceUnlockModal
         isOpen={showVoiceModal}
+        onClose={() => setShowVoiceModal(false)}
         targetWord="NYLON"
         wordMeaning="Super strong synthetic fibre used in climbing ropes and parachutes!"
         nextRoute="/play/experiments"
