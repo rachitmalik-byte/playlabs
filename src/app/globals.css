@@ -1,0 +1,287 @@
+@import "tailwindcss";
+
+@theme {
+  /* === POLYQUEST COLOR SYSTEM === */
+  /* Laboratory world */
+  --color-lab-wood: #C4956A;
+  --color-lab-wood-light: #D4AD86;
+  --color-lab-wood-dark: #A07A52;
+  --color-lab-cream: #FFF8F0;
+  --color-lab-chalk: #F5F0E8;
+  --color-lab-warm: #FAF4EC;
+
+  /* Pip */
+  --color-pip-blue: #4A90D9;
+  --color-pip-blue-light: #6DA8E8;
+  --color-pip-blue-dark: #3672B5;
+
+  /* Learning domains */
+  --color-nature-green: #5DAA68;
+  --color-nature-green-light: #7BC285;
+  --color-nature-green-dark: #478A52;
+  --color-factory-orange: #E8845A;
+  --color-factory-orange-light: #F0A07A;
+  --color-factory-orange-dark: #C86A40;
+  --color-fire-red: #E05A5A;
+  --color-fire-red-light: #F07878;
+  --color-water-blue: #68B8D7;
+  --color-water-blue-light: #8ECDE6;
+  --color-earth-brown: #8B6F47;
+  --color-earth-brown-light: #A68A62;
+
+  /* UI */
+  --color-text-dark: #2D2520;
+  --color-text-muted: #7A6F65;
+  --color-text-light: #A89888;
+  --color-success: #6AAF6E;
+  --color-success-light: #8FC992;
+  --color-hint-yellow: #F5D76E;
+  --color-hint-yellow-light: #FAE89A;
+
+  /* Shadows */
+  --shadow-soft: 0 2px 8px rgba(45, 37, 32, 0.08);
+  --shadow-medium: 0 4px 16px rgba(45, 37, 32, 0.12);
+  --shadow-warm: 0 4px 20px rgba(196, 149, 106, 0.2);
+
+  /* Fonts */
+  --font-nunito: "Nunito", system-ui, sans-serif;
+  --font-mono: "Space Mono", ui-monospace, monospace;
+
+  /* Border radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  /* Spacing for learning content */
+  --spacing-learning: 2rem;
+}
+
+/* === BASE STYLES === */
+html {
+  font-family: var(--font-nunito);
+  color: var(--color-text-dark);
+  background: var(--color-lab-cream);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+/* === LABORATORY BACKGROUND TEXTURE === */
+.lab-bg {
+  background-color: var(--color-lab-cream);
+  background-image:
+    radial-gradient(circle at 20% 80%, rgba(196, 149, 106, 0.06) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(74, 144, 217, 0.04) 0%, transparent 50%);
+}
+
+.lab-bg-warm {
+  background-color: var(--color-lab-warm);
+  background-image:
+    radial-gradient(circle at 30% 70%, rgba(196, 149, 106, 0.08) 0%, transparent 40%);
+}
+
+/* === WOOD SHELF TEXTURE === */
+.wood-surface {
+  background: linear-gradient(
+    180deg,
+    var(--color-lab-wood) 0%,
+    var(--color-lab-wood-dark) 100%
+  );
+  border-radius: var(--radius-md);
+}
+
+/* === LEARNING CONTENT AREA === */
+.experiment-stage {
+  position: relative;
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* === SCIENCE TERM HIGHLIGHT === */
+.science-term {
+  font-weight: 800;
+  color: var(--color-pip-blue-dark);
+  background: linear-gradient(transparent 60%, rgba(74, 144, 217, 0.15) 60%);
+  padding: 0 4px;
+}
+
+/* === DIALOGUE STYLES === */
+.speech-bubble {
+  position: relative;
+  background: white;
+  border: 2px solid var(--color-lab-wood);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  box-shadow: var(--shadow-soft);
+  max-width: 360px;
+  font-size: 1.125rem;
+  line-height: 1.6;
+}
+
+.speech-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -12px;
+  left: 24px;
+  width: 0;
+  height: 0;
+  border-left: 12px solid transparent;
+  border-right: 12px solid transparent;
+  border-top: 12px solid white;
+  filter: drop-shadow(0 2px 2px rgba(45, 37, 32, 0.08));
+}
+
+.speech-bubble::before {
+  content: '';
+  position: absolute;
+  bottom: -14px;
+  left: 23px;
+  width: 0;
+  height: 0;
+  border-left: 13px solid transparent;
+  border-right: 13px solid transparent;
+  border-top: 13px solid var(--color-lab-wood);
+}
+
+/* === INTERACTIVE OBJECTS === */
+.interactive-object {
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.interactive-object:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: var(--shadow-medium);
+}
+
+.interactive-object:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.interactive-object.dragging {
+  transform: scale(1.08);
+  box-shadow: var(--shadow-warm);
+  z-index: 50;
+  opacity: 0.9;
+}
+
+/* === DROP ZONES === */
+.drop-zone {
+  border: 2px dashed var(--color-text-light);
+  border-radius: var(--radius-lg);
+  transition: all 0.2s ease;
+  min-height: 120px;
+}
+
+.drop-zone.active {
+  border-color: var(--color-pip-blue);
+  background: rgba(74, 144, 217, 0.06);
+}
+
+.drop-zone.correct {
+  border-color: var(--color-success);
+  background: rgba(106, 175, 110, 0.08);
+}
+
+.drop-zone.incorrect {
+  border-color: var(--color-fire-red);
+  background: rgba(224, 90, 90, 0.06);
+}
+
+/* === EXAM BRIDGE === */
+.exam-bridge {
+  border-left: 4px solid var(--color-pip-blue);
+  padding-left: 1.25rem;
+  margin: 1.5rem 0;
+}
+
+.exam-bridge .child-said {
+  color: var(--color-text-muted);
+  font-style: italic;
+  margin-bottom: 0.5rem;
+}
+
+.exam-bridge .scientist-says {
+  font-weight: 700;
+  color: var(--color-pip-blue-dark);
+}
+
+.exam-bridge .exam-answer {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  background: var(--color-lab-chalk);
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  margin-top: 0.5rem;
+}
+
+/* === LEARNING TRAIL === */
+.trail-node {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  font-size: 1.25rem;
+  transition: all 0.3s ease;
+}
+
+.trail-node.completed {
+  background: var(--color-success);
+  color: white;
+}
+
+.trail-node.current {
+  background: var(--color-pip-blue);
+  color: white;
+  box-shadow: 0 0 0 4px rgba(74, 144, 217, 0.2);
+  animation: pulse-current 2s ease-in-out infinite;
+}
+
+.trail-node.locked {
+  background: var(--color-lab-chalk);
+  color: var(--color-text-light);
+}
+
+@keyframes pulse-current {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(74, 144, 217, 0.2); }
+  50% { box-shadow: 0 0 0 8px rgba(74, 144, 217, 0.1); }
+}
+
+/* === REDUCED MOTION === */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* === SCROLLBAR === */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-lab-chalk);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-lab-wood-light);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-lab-wood);
+}
