@@ -1,240 +1,421 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-
-// === PARENT DASHBOARD ===
-// Calm, useful, completely different from the child's game experience
-// Shows UNDERSTANDING, not just scores
-
-type ConceptStatus = "strong" | "developing" | "needs_practice" | "not_started";
-
-type ConceptProgress = {
-  name: string;
-  status: ConceptStatus;
-  detail: string;
-};
-
-// Simulated progress data (in production, this comes from the learning engine)
-const CONCEPT_PROGRESS: ConceptProgress[] = [
-  { name: "Natural vs Synthetic", status: "strong", detail: "Correctly sorted 9/9 materials and explained the difference" },
-  { name: "Nylon strength", status: "strong", detail: "Predicted correctly and connected to real-world uses" },
-  { name: "Cotton breathability", status: "strong", detail: "Understands why cotton is better in summer" },
-  { name: "Fire safety", status: "developing", detail: "Knows cotton is safer but unsure why synthetic melts" },
-  { name: "Polyester properties", status: "developing", detail: "Identified water resistance but missed wrinkle resistance" },
-  { name: "Rayon classification", status: "developing", detail: "Confused whether rayon is natural or synthetic" },
-  { name: "Electrical insulation", status: "needs_practice", detail: "Can identify plastic as insulator but can't explain why" },
-  { name: "Heat insulation", status: "needs_practice", detail: "Chose metal handle for kettle — needs to revisit" },
-  { name: "Plastic environmental impact", status: "developing", detail: "Knows plastic lasts long but unclear on 'non-biodegradable'" },
-  { name: "Acrylic properties", status: "strong", detail: "Correctly identified as wool-like synthetic" },
-  { name: "Synthetic rubber", status: "not_started", detail: "Not yet explored" },
-  { name: "Synthetic adhesives", status: "not_started", detail: "Not yet explored" },
-];
+import { 
+  useLearningEngine, 
+  ActivityLogEntry 
+} from "@/lib/learning-engine";
+import { 
+  CheckCircle2, 
+  Clock, 
+  Sparkles, 
+  HelpCircle, 
+  RotateCcw, 
+  TrendingUp, 
+  BookOpen, 
+  Activity,
+  Award,
+  FlaskConical
+} from "lucide-react";
+import { playClickSound, playPopSound } from "@/lib/audio-manager";
 
 const HOME_ACTIVITIES = [
   {
     emoji: "👕",
-    title: "Label Hunt",
-    description: "Find 3 clothing labels together. Read what material each garment is made from. Ask: \"Is this natural or synthetic?\"",
+    title: "Label Detective",
+    description: "Look at 3 clothing tags in the closet. Read what material each garment is made from. Ask: \"Is this natural or synthetic? Why?\"",
     time: "5 min",
+    relevantConcept: "Natural vs Synthetic Fibres"
   },
   {
     emoji: "☕",
-    title: "Kitchen Detective",
-    description: "Look at a cooking pan or kettle handle. Ask: \"Why isn't the handle made of metal?\"",
+    title: "Kitchen Heat Test",
+    description: "Look at cooking pans, kettles, or spoons in your kitchen. Ask: \"Why isn't the handle made of metal? What would happen if it were?\"",
     time: "3 min",
+    relevantConcept: "Heat Insulators (Poor Conductors)"
   },
   {
     emoji: "🪢",
-    title: "Nylon Finder",
-    description: "Find one object at home made from nylon. Hint: check toothbrushes, bags, or ropes.",
-    time: "3 min",
+    title: "Nylon Hunter",
+    description: "Find 2 items at home made with nylon thread (toothbrushes, backpacks, ropes). Feel how thin yet incredibly strong they are!",
+    time: "4 min",
+    relevantConcept: "High Tensile Strength"
   },
   {
     emoji: "🧴",
-    title: "Plastic Audit",
-    description: "Count how many plastic objects are in one room. Discuss: Why is plastic used so much? What problems can it cause?",
+    title: "Plastic Life Audit",
+    description: "Pick 3 plastic items in a room. Discuss: \"Why did we use plastic instead of glass or wood? What happens when we throw it away?\"",
     time: "5 min",
+    relevantConcept: "Non-Biodegradable Polymers"
   },
   {
     emoji: "🔌",
-    title: "Wire Check",
-    description: "Look at any electrical wire. Ask: \"What is the outer covering? Why is it there?\"",
+    title: "Safe Wire Inspector",
+    description: "Look at a lamp or phone charger cord. Ask: \"What metal is inside carrying electricity, and what plastic protects your fingers from shock?\"",
     time: "3 min",
+    relevantConcept: "Electrical Conductors & Insulators"
   },
 ];
 
-const statusConfig = {
-  strong: { label: "Strong", color: "text-success", bg: "bg-success/8", border: "border-success/15", icon: "✓" },
-  developing: { label: "Developing", color: "text-factory-orange", bg: "bg-factory-orange/8", border: "border-factory-orange/15", icon: "◐" },
-  needs_practice: { label: "Needs Practice", color: "text-fire-red", bg: "bg-fire-red/6", border: "border-fire-red/12", icon: "○" },
-  not_started: { label: "Not Started", color: "text-text-light", bg: "bg-lab-chalk/50", border: "border-lab-wood/8", icon: "—" },
-};
-
 export default function ParentDashboard() {
-  const strong = CONCEPT_PROGRESS.filter((c) => c.status === "strong");
-  const developing = CONCEPT_PROGRESS.filter((c) => c.status === "developing");
-  const needsPractice = CONCEPT_PROGRESS.filter((c) => c.status === "needs_practice");
-  const notStarted = CONCEPT_PROGRESS.filter((c) => c.status === "not_started");
+  const { state, resetProgress, seedSampleData } = useLearningEngine();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-lab-cream flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-pip-blue border-t-transparent" />
+      </div>
+    );
+  }
+
+  // Calculate real analytics from state
+  const conceptsArray = Object.values(state.concepts || {});
+  const totalAttempts = conceptsArray.reduce((acc, c) => acc + (c.attempts || 0), 0);
+  const totalCorrect = conceptsArray.reduce((acc, c) => acc + (c.correctAttempts || 0), 0);
+  const completedMissionsCount = (state.completedMissions || []).length;
+  
+  const strong = conceptsArray.filter((c) => c.mastery === "mastered" || (c.attempts >= 2 && c.correctAttempts / c.attempts >= 0.75));
+  const developing = conceptsArray.filter((c) => c.mastery === "understood" || c.mastery === "developing");
+  const needsPractice = conceptsArray.filter((c) => c.attempts > 0 && c.correctAttempts / c.attempts < 0.5);
+  const notStarted = conceptsArray.filter((c) => !c.attempts || c.attempts === 0);
+
+  // Generate dynamic Natural Language Insights based on actual child gameplay
+  const generateDynamicInsights = () => {
+    if (totalAttempts === 0) {
+      return (
+        <div className="text-text-muted space-y-2">
+          <p className="text-base text-text-dark font-semibold">
+            🌱 Your child has just stepped into the lab!
+          </p>
+          <p className="text-sm leading-relaxed">
+            As your child explores missions (sorting natural vs synthetic materials, testing tensile strength, and running flame/sweat tests), real-time diagnostic insights will populate here automatically.
+          </p>
+        </div>
+      );
+    }
+
+    const strengthsText = strong.length > 0 
+      ? `Your child shows strong confidence in ${strong.map(s => `"${s.title}"`).slice(0, 3).join(', ')}.`
+      : "Your child is building initial foundational intuition across material types.";
+
+    const developingText = developing.length > 0
+      ? `They are currently developing their understanding of ${developing.map(d => `"${d.title}"`).slice(0, 2).join(' and ')} through hands-on testing.`
+      : "";
+
+    const struggleText = needsPractice.length > 0
+      ? `They encountered some tricky questions on ${needsPractice.map(n => `"${n.title}"`).join(', ')}. Revisiting the interactive experiments will help solidify the underlying science!`
+      : "They have maintained high accuracy across their completed experiments!";
+
+    return (
+      <div className="space-y-3 text-text-dark leading-relaxed">
+        <p className="text-base font-medium">
+          {strengthsText}
+        </p>
+        {developingText && (
+          <p className="text-sm text-text-muted">
+            {developingText}
+          </p>
+        )}
+        <p className="text-sm text-text-muted">
+          {struggleText}
+        </p>
+      </div>
+    );
+  };
 
   return (
-    <div className="min-h-screen bg-lab-cream">
-      {/* Clean header */}
-      <div className="bg-white border-b border-lab-wood/10">
-        <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-text-dark">
-              Learning Progress
-            </h1>
-            <p className="text-sm text-text-muted">
-              Materials Science — Chapter Overview
-            </p>
+    <div className="min-h-screen bg-lab-cream text-text-dark pb-16">
+      {/* Top Header */}
+      <header className="bg-white border-b border-lab-wood/15 sticky top-0 z-30 shadow-xs">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">👨‍👩‍👧</span>
+            <div>
+              <h1 className="text-lg sm:text-xl font-extrabold text-text-dark tracking-tight">
+                Parent Diagnostic Portal
+              </h1>
+              <p className="text-xs text-text-muted">
+                Real-Time Material Science Mastery & Learning Insights
+              </p>
+            </div>
           </div>
-          <Link
-            href="/"
-            className="text-sm text-pip-blue font-semibold hover:text-pip-blue-dark transition-colors"
-          >
-            ← Back to Home
-          </Link>
+
+          <div className="flex items-center gap-3">
+            <Link
+              href="/"
+              className="px-4 py-2 rounded-xl text-xs font-bold bg-lab-chalk hover:bg-lab-warm text-text-dark border border-lab-wood/20 transition-colors"
+            >
+              ← Back to Home
+            </Link>
+            <Link
+              href="/play"
+              className="px-4 py-2 rounded-xl text-xs font-bold bg-pip-blue text-white shadow-soft hover:bg-pip-blue-dark transition-colors"
+            >
+              Open Child Playground 🚀
+            </Link>
+          </div>
         </div>
-      </div>
+      </header>
 
-      <div className="max-w-3xl mx-auto px-4 py-8 space-y-10">
-        {/* Natural language insight — the MOST important section */}
-        <motion.section
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <h2 className="text-lg font-bold text-text-dark mb-4">
-            What Your Child Understands
-          </h2>
-          <div className="bg-white rounded-xl border border-lab-wood/10 p-5 space-y-3">
-            <p className="text-base text-text-dark leading-relaxed">
-              Your child can <strong>correctly sort materials</strong> into natural
-              and synthetic categories. They understand that{" "}
-              <strong>nylon is strong</strong> and used in ropes and parachutes,
-              and that <strong>cotton is breathable</strong> and safer near fire.
-            </p>
-            <p className="text-base text-text-dark leading-relaxed">
-              They&apos;re still building understanding of{" "}
-              <strong>why synthetic fabrics melt</strong> near flames, and are{" "}
-              <strong>confused about whether rayon is natural or synthetic</strong>.
-            </p>
-            <p className="text-base text-text-dark leading-relaxed">
-              They need more practice understanding{" "}
-              <strong>electrical and heat insulation</strong> — they can identify
-              plastic as an insulator but can&apos;t yet explain the underlying reason.
-            </p>
-          </div>
-        </motion.section>
-
-        {/* Concept mastery breakdown */}
-        <motion.section
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <h2 className="text-lg font-bold text-text-dark mb-4">
-            Concept Mastery
-          </h2>
-
-          {/* Summary counts */}
-          <div className="grid grid-cols-4 gap-3 mb-6">
-            {[
-              { label: "Strong", count: strong.length, config: statusConfig.strong },
-              { label: "Developing", count: developing.length, config: statusConfig.developing },
-              { label: "Needs Practice", count: needsPractice.length, config: statusConfig.needs_practice },
-              { label: "Not Started", count: notStarted.length, config: statusConfig.not_started },
-            ].map((item) => (
-              <div
-                key={item.label}
-                className={`${item.config.bg} border ${item.config.border} rounded-lg p-3 text-center`}
-              >
-                <p className={`text-2xl font-bold ${item.config.color}`}>
-                  {item.count}
-                </p>
-                <p className="text-xs text-text-muted font-medium mt-1">
-                  {item.label}
-                </p>
-              </div>
-            ))}
+      {/* Main Content Area */}
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 pt-8 space-y-8">
+        
+        {/* Quick Diagnostic Metrics Bar */}
+        <section className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+          <div className="bg-white rounded-2xl p-4 border border-lab-wood/15 shadow-soft flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-xl bg-pip-blue/10 flex items-center justify-center text-pip-blue text-xl font-black shrink-0">
+              <FlaskConical size={22} />
+            </div>
+            <div>
+              <p className="text-2xl font-black text-text-dark">{completedMissionsCount}/8</p>
+              <p className="text-[11px] font-bold text-text-muted uppercase tracking-wider">Missions Done</p>
+            </div>
           </div>
 
-          {/* Detailed concept list */}
-          <div className="space-y-2">
-            {CONCEPT_PROGRESS.map((concept, i) => {
-              const config = statusConfig[concept.status];
+          <div className="bg-white rounded-2xl p-4 border border-lab-wood/15 shadow-soft flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-xl bg-nature-green/10 flex items-center justify-center text-nature-green text-xl font-black shrink-0">
+              <CheckCircle2 size={22} />
+            </div>
+            <div>
+              <p className="text-2xl font-black text-nature-green-dark">{strong.length}</p>
+              <p className="text-[11px] font-bold text-text-muted uppercase tracking-wider">Concepts Mastered</p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl p-4 border border-lab-wood/15 shadow-soft flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-xl bg-factory-orange/10 flex items-center justify-center text-factory-orange text-xl font-black shrink-0">
+              <TrendingUp size={22} />
+            </div>
+            <div>
+              <p className="text-2xl font-black text-factory-orange-dark">
+                {totalAttempts > 0 ? `${Math.round((totalCorrect / totalAttempts) * 100)}%` : "0%"}
+              </p>
+              <p className="text-[11px] font-bold text-text-muted uppercase tracking-wider">Accuracy Rate</p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl p-4 border border-lab-wood/15 shadow-soft flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-xl bg-hint-yellow/15 flex items-center justify-center text-earth-brown text-xl font-black shrink-0">
+              <Activity size={22} />
+            </div>
+            <div>
+              <p className="text-2xl font-black text-text-dark">{totalAttempts}</p>
+              <p className="text-[11px] font-bold text-text-muted uppercase tracking-wider">Total Tests Run</p>
+            </div>
+          </div>
+        </section>
+
+        {/* Dynamic Natural Language Summary Section */}
+        <section className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-lab-wood/20 shadow-soft">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">🧠</span>
+              <h2 className="text-lg sm:text-xl font-extrabold text-text-dark">
+                What Your Child Understands
+              </h2>
+            </div>
+            <span className="text-[11px] font-bold text-pip-blue bg-pip-blue/10 px-3 py-1 rounded-full">
+              Live Diagnostic Analysis
+            </span>
+          </div>
+
+          {generateDynamicInsights()}
+        </section>
+
+        {/* Real Concept Mastery Breakdown */}
+        <section className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-lab-wood/20 shadow-soft">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">📊</span>
+              <h2 className="text-lg sm:text-xl font-extrabold text-text-dark">
+                Concept Mastery Breakdown
+              </h2>
+            </div>
+            <span className="text-xs text-text-muted font-semibold">
+              Grade 8 NCERT Materials Curriculum
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            {conceptsArray.map((concept) => {
+              const attempts = concept.attempts || 0;
+              const correct = concept.correctAttempts || 0;
+              const isMastered = concept.mastery === "mastered" || (attempts >= 2 && correct / attempts >= 0.75);
+              const isDeveloping = concept.mastery === "understood" || concept.mastery === "developing";
+              const isStruggling = attempts > 0 && correct / attempts < 0.5;
+
               return (
-                <motion.div
-                  key={concept.name}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.03 }}
-                  className={`flex items-start gap-3 p-3 rounded-lg ${config.bg} border ${config.border}`}
+                <div
+                  key={concept.id}
+                  className={`p-4 rounded-2xl border transition-all flex items-start justify-between gap-3 ${
+                    isMastered
+                      ? "bg-nature-green/6 border-nature-green/25"
+                      : isDeveloping
+                      ? "bg-factory-orange/6 border-factory-orange/25"
+                      : isStruggling
+                      ? "bg-fire-red/6 border-fire-red/25"
+                      : "bg-lab-chalk/40 border-lab-wood/15 opacity-70"
+                  }`}
                 >
-                  <span className={`text-sm font-bold ${config.color} mt-0.5 w-5 text-center`}>
-                    {config.icon}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-text-dark">
-                      {concept.name}
+                  <div>
+                    <h3 className="font-extrabold text-sm text-text-dark capitalize">
+                      {concept.title || concept.id.replace(/_/g, " ")}
+                    </h3>
+                    <p className="text-xs text-text-muted mt-0.5 leading-relaxed">
+                      {concept.simpleExplanation || "Core material science concept."}
                     </p>
-                    <p className="text-xs text-text-muted mt-0.5">
-                      {concept.detail}
-                    </p>
+                    <div className="mt-2 flex items-center gap-2 text-[11px] text-text-muted font-bold">
+                      <span>Attempts: {attempts}</span>
+                      <span>•</span>
+                      <span>Correct: {correct}</span>
+                    </div>
                   </div>
+
                   <span
-                    className={`text-xs font-medium ${config.color} shrink-0`}
+                    className={`shrink-0 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider ${
+                      isMastered
+                        ? "bg-nature-green/15 text-nature-green-dark"
+                        : isDeveloping
+                        ? "bg-factory-orange/15 text-factory-orange-dark"
+                        : isStruggling
+                        ? "bg-fire-red/15 text-fire-red"
+                        : "bg-lab-chalk text-text-light"
+                    }`}
                   >
-                    {config.label}
+                    {isMastered ? "Strong ✓" : isDeveloping ? "Developing ◐" : isStruggling ? "Practice ○" : "Not Started"}
                   </span>
-                </motion.div>
+                </div>
               );
             })}
           </div>
-        </motion.section>
+        </section>
 
-        {/* Home connection activities */}
-        <motion.section
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <h2 className="text-lg font-bold text-text-dark mb-2">
-            Try at Home
-          </h2>
-          <p className="text-sm text-text-muted mb-4">
-            Quick activities to reinforce learning — less than 5 minutes each
-          </p>
+        {/* Real Live Activity Log */}
+        {state.activityLog && state.activityLog.length > 0 && (
+          <section className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-lab-wood/20 shadow-soft">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">📜</span>
+                <h2 className="text-lg sm:text-xl font-extrabold text-text-dark">
+                  Recent Learning Activity & Observations
+                </h2>
+              </div>
+              <span className="text-xs text-text-muted font-semibold">
+                Last {state.activityLog.length} actions
+              </span>
+            </div>
 
-          <div className="space-y-3">
-            {HOME_ACTIVITIES.map((activity, i) => (
-              <motion.div
-                key={activity.title}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.25 + i * 0.05 }}
-                className="flex gap-4 p-4 bg-white rounded-xl border border-lab-wood/10"
+            <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+              {state.activityLog.slice(0, 10).map((log: ActivityLogEntry) => (
+                <div
+                  key={log.id}
+                  className="flex items-center justify-between p-3 rounded-xl bg-lab-chalk/60 border border-lab-wood/15 text-xs"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className={`text-base ${log.isCorrect ? "text-nature-green" : "text-factory-orange"}`}>
+                      {log.isCorrect ? "✅" : "💡"}
+                    </span>
+                    <div>
+                      <p className="font-extrabold text-text-dark">{log.conceptName}</p>
+                      <p className="text-text-muted text-[11px]">{log.note}</p>
+                    </div>
+                  </div>
+
+                  <span className="text-[10px] text-text-light shrink-0 font-medium">
+                    {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Offline Home Activities */}
+        <section className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-lab-wood/20 shadow-soft">
+          <div className="mb-6">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">🏠</span>
+              <h2 className="text-lg sm:text-xl font-extrabold text-text-dark">
+                5-Minute Offline Science Activities
+              </h2>
+            </div>
+            <p className="text-xs text-text-muted mt-1">
+              Quick, meaningful parent-child questions to connect screen learning to the physical world.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {HOME_ACTIVITIES.map((act) => (
+              <div
+                key={act.title}
+                className="p-5 rounded-2xl bg-gradient-to-b from-white to-lab-warm/30 border border-lab-wood/20 shadow-xs flex flex-col justify-between gap-3"
               >
-                <span className="text-3xl shrink-0">{activity.emoji}</span>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-sm font-bold text-text-dark">
-                      {activity.title}
-                    </h3>
-                    <span className="text-[10px] font-semibold text-text-light bg-lab-chalk px-2 py-0.5 rounded-full">
-                      {activity.time}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-3xl">{act.emoji}</span>
+                    <span className="text-[10px] font-extrabold px-2 py-0.5 bg-lab-chalk text-text-dark rounded-full border border-lab-wood/20">
+                      ⏱️ {act.time}
                     </span>
                   </div>
-                  <p className="text-sm text-text-muted leading-relaxed">
-                    {activity.description}
+                  <h3 className="font-extrabold text-sm text-text-dark mb-1">
+                    {act.title}
+                  </h3>
+                  <p className="text-xs text-text-muted leading-relaxed">
+                    {act.description}
                   </p>
                 </div>
-              </motion.div>
+
+                <div className="pt-2 border-t border-lab-wood/10 text-[10px] font-bold text-pip-blue-dark">
+                  Target: {act.relevantConcept}
+                </div>
+              </div>
             ))}
           </div>
-        </motion.section>
-      </div>
+        </section>
+
+        {/* Tester & Parent Tools: Simulate / Reset Live Progress */}
+        <section className="bg-lab-chalk rounded-2xl p-4 border border-lab-wood/20 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+          <div>
+            <p className="text-xs font-extrabold text-text-dark">
+              Diagnostic Data Management
+            </p>
+            <p className="text-[11px] text-text-muted">
+              Data is saved securely in your browser cache and updates in real time.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                playClickSound();
+                seedSampleData();
+              }}
+              className="px-3.5 py-1.5 rounded-xl bg-white border border-lab-wood/30 hover:bg-lab-warm text-text-dark text-xs font-bold transition-all shadow-xs"
+              title="Populate realistic child gameplay data"
+            >
+              🎮 Simulate Child Progress
+            </button>
+            <button
+              onClick={() => {
+                playPopSound();
+                resetProgress();
+              }}
+              className="px-3.5 py-1.5 rounded-xl bg-white border border-fire-red/30 hover:bg-fire-red/10 text-fire-red text-xs font-bold transition-all shadow-xs"
+              title="Clear all saved progress"
+            >
+              🔄 Reset Data
+            </button>
+          </div>
+        </section>
+
+      </main>
     </div>
   );
 }

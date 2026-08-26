@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { Flame, Droplets, ArrowRight, ArrowLeft, AlertTriangle, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { Flame, Droplets, ArrowRight, ArrowLeft, AlertTriangle, ShieldCheck, CheckCircle2, Lightbulb } from 'lucide-react';
+import { logChildAttempt } from '@/lib/learning-engine';
+import { playDiscoverySound, playWarningSound, speak } from '@/lib/audio-manager';
 
 export default function SafetyMission() {
   const [activeTab, setActiveTab] = useState<'fire' | 'sweat'>('fire');
@@ -14,10 +16,18 @@ export default function SafetyMission() {
   const handleTestFabric = (fabric: string) => {
     setDraggedFabric(fabric);
     setFireStage(2);
+    if (fabric === 'cotton') {
+      playDiscoverySound();
+      speak("Look closely! The cotton fabric chars slowly and turns to soft grey ash without melting!");
+      logChildAttempt('plastic_safety', true, 'Observed cotton chars safely to ash in flame test', 'safety');
+    } else {
+      playWarningSound();
+      speak("Careful! The synthetic fabric shrinks, melts into a hot bead, and sticks! That is why we should never wear synthetic clothes near open fire!");
+      logChildAttempt('plastic_safety', true, 'Observed synthetic fabric melting into sticky beads near flame', 'safety');
+    }
   };
 
   const handleDragEnd = (fabric: string, _info: any) => {
-    // Whenever dragged, trigger flame test
     handleTestFabric(fabric);
   };
 

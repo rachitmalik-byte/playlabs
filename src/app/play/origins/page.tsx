@@ -5,7 +5,9 @@ import { motion, AnimatePresence, Reorder } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { VoiceUnlockModal } from "@/components/learning/VoiceUnlockModal";
-import { Sparkles, Mic } from "lucide-react";
+import { Sparkles, Mic, Lightbulb, CheckCircle2, AlertCircle } from "lucide-react";
+import { logChildAttempt, logMissionCompleted } from "@/lib/learning-engine";
+import { playDiscoverySound, playPopSound, playWarningSound, speak } from "@/lib/audio-manager";
 
 // === LEARNING LOOP ===
 // SEE objects → PREDICT (sort them) → INTERACT (drag) → OBSERVE (results) →
@@ -68,21 +70,45 @@ export default function OriginsPage() {
 
   const allInspected = inspectedObjects.size >= 5; // Need at least 5 to proceed
 
-  // Handle dropping a material into a bin
+  // Handle dropping a material into a bin with immediate sound, speech reasoning, and diagnostic logging
   const handleDrop = useCallback(
     (bin: "nature" | "factory", item: MaterialItem) => {
+      const isCorrect = 
+        (bin === "nature" && item.category === "natural") ||
+        (bin === "factory" && item.category === "synthetic");
+
       setUnsorted((prev) => prev.filter((m) => m.id !== item.id));
       if (bin === "nature") {
         setNatureBin((prev) => [...prev, item]);
       } else {
         setFactoryBin((prev) => [...prev, item]);
       }
-      // Track mistakes
-      if (
-        (bin === "nature" && item.category !== "natural") ||
-        (bin === "factory" && item.category !== "synthetic")
-      ) {
+
+      if (isCorrect) {
+        playDiscoverySound();
+        const reason = bin === "nature" 
+          ? `Spot on! ${item.name} comes from ${item.origin} in nature!` 
+          : `Correct! ${item.name} is a synthetic material made from chemicals!`;
+        speak(reason);
+        logChildAttempt(
+          item.category === "natural" ? "natural_material" : "synthetic_material",
+          true,
+          `Correctly classified ${item.name} as ${item.category} (${item.origin})`,
+          "origins"
+        );
+      } else {
+        playWarningSound();
         setMistakes((prev) => [...prev, item.id]);
+        const reason = item.category === "natural"
+          ? `Actually, ${item.name} comes from ${item.origin}! It's a natural material.`
+          : `Actually, ${item.name} is made in factories from chemicals! It's synthetic.`;
+        speak(reason);
+        logChildAttempt(
+          item.category === "natural" ? "natural_material" : "synthetic_material",
+          false,
+          `Misclassified ${item.name} into ${bin} (actually ${item.category})`,
+          "origins"
+        );
       }
     },
     []
@@ -539,20 +565,49 @@ export default function OriginsPage() {
               </motion.div>
             </div>
 
+            {/* Scientific Reasoning Cards */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="bg-white rounded-2xl border-2 border-pip-blue/20 p-6 mb-6 shadow-soft"
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-2xl">🔬</span>
+                <h3 className="text-lg font-extrabold text-text-dark">
+                  The Science Reasoning: Why Does This Matter?
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs leading-relaxed text-text-dark">
+                <div className="bg-nature-green/10 p-3.5 rounded-xl border border-nature-green/20">
+                  <span className="font-extrabold text-nature-green-dark block mb-1">
+                    🌱 Why do Natural Fibres Breathe?
+                  </span>
+                  Cotton and wool fibres have natural microscopic pores and hollow tubes. They absorb moisture and allow air flow, making them super breathable in hot weather!
+                </div>
+
+                <div className="bg-factory-orange/10 p-3.5 rounded-xl border border-factory-orange/20">
+                  <span className="font-extrabold text-factory-orange-dark block mb-1">
+                    ⚙️ Why are Synthetic Fibres so Tough?
+                  </span>
+                  Synthetic fibres like nylon are formed by chaining thousands of small chemical molecules into unbroken polymer lines, giving them unmatched tensile strength!
+                </div>
+              </div>
+            </motion.div>
+
             {/* Key insight */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="bg-white rounded-xl border border-pip-blue/15 p-5 text-center mb-6"
+              className="bg-lab-chalk/80 rounded-xl border border-lab-wood/20 p-5 text-center mb-6"
             >
               <p className="text-base text-text-dark mb-2">
-                <strong>Natural materials</strong> are found in nature — from
-                plants, animals, and the earth.
+                <strong>Natural materials</strong> are obtained directly from nature (plants, animals, and earth).
               </p>
               <p className="text-base text-text-dark">
-                <strong>Synthetic materials</strong> are made by people in
-                factories, usually from chemicals found in petroleum (crude oil).
+                <strong>Synthetic materials</strong> are man-made through chemical processing of petrochemicals.
               </p>
             </motion.div>
 
