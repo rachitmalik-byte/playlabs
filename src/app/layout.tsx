@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Nunito, Space_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -16,10 +16,25 @@ const spaceMono = Space_Mono({
   weight: ["400", "700"],
 });
 
+export const viewport: Viewport = {
+  themeColor: "#FFF8F0",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+};
+
 export const metadata: Metadata = {
   title: "PolyQuest — The Secret World of Materials",
   description:
-    "An interactive science adventure for children. Discover the hidden world of materials through experiments, stories, and exploration.",
+    "An interactive children's science adventure and virtual laboratory. Discover the hidden world of materials, fibres, and plastics through experiments and stories.",
+  keywords: ["science for kids", "materials science", "grade 8 science", "synthetic fibres", "plastics", "interactive learning"],
+  authors: [{ name: "PlayLabs" }],
+  openGraph: {
+    title: "PolyQuest — The Secret World of Materials",
+    description: "An interactive science adventure and virtual laboratory for children.",
+    siteName: "PolyQuest",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
@@ -29,7 +44,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${nunito.variable} ${spaceMono.variable}`}>
-      <body className="lab-bg antialiased">
+      <head>
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+      </head>
+      <body className="lab-bg antialiased selection:bg-pip-blue/20 selection:text-pip-blue-dark">
         {children}
       </body>
     </html>
