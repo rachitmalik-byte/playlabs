@@ -1,18 +1,21 @@
-"use client";
+'use client';
 
-import { useState, useCallback, useEffect } from "react";
-import { motion, AnimatePresence, Reorder } from "framer-motion";
-import Link from "next/link";
+import { useState, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { VoiceUnlockModal } from "@/components/learning/VoiceUnlockModal";
+import Link from "next/link";
+import { logChildAttempt } from "@/lib/learning-engine";
+import { 
+  playDiscoverySound, 
+  playSuccessSound, 
+  playWarningSound, 
+  playPopSound, 
+  playClickSound, 
+  speak 
+} from "@/lib/audio-manager";
 import { KidTermTooltip } from "@/components/learning/KidTermTooltip";
-import { Sparkles, Mic, Lightbulb, CheckCircle2, AlertCircle, ArrowLeft } from "lucide-react";
-import { logChildAttempt, logMissionCompleted } from "@/lib/learning-engine";
-import { playDiscoverySound, playPopSound, playWarningSound, playClickSound, speak } from "@/lib/audio-manager";
-
-// === LEARNING LOOP ===
-// SEE objects → PREDICT (sort them) → INTERACT (drag) → OBSERVE (results) →
-// EXPLAIN (child language) → LEARN THE WORD (natural/synthetic) → REMEMBER
+import { VoiceUnlockModal } from "@/components/learning/VoiceUnlockModal";
+import { ArrowLeft, ArrowRight, RotateCcw, Sparkles, CheckCircle2, AlertTriangle, Lightbulb } from "lucide-react";
 
 type Phase =
   | "inspect"        // Step 1: What is a material?
@@ -28,26 +31,36 @@ type MaterialItem = {
   category: "natural" | "synthetic";
   origin: string;
   madeFrom: string;
+  image?: string;
 };
 
 const MATERIALS: MaterialItem[] = [
-  { id: "cotton", name: "Cotton", emoji: "🌿", category: "natural", origin: "Cotton plant", madeFrom: "Plant fibres" },
-  { id: "wool", name: "Wool", emoji: "🐑", category: "natural", origin: "Sheep", madeFrom: "Animal hair" },
-  { id: "silk", name: "Silk", emoji: "🐛", category: "natural", origin: "Silkworm", madeFrom: "Silkworm cocoon" },
-  { id: "wood", name: "Wood", emoji: "🌳", category: "natural", origin: "Trees", madeFrom: "Tree trunk" },
-  { id: "rubber_natural", name: "Natural Rubber", emoji: "🌴", category: "natural", origin: "Rubber tree", madeFrom: "Tree sap (latex)" },
-  { id: "nylon", name: "Nylon", emoji: "🧵", category: "synthetic", origin: "Factory", madeFrom: "Chemicals from petroleum" },
-  { id: "polyester", name: "Polyester", emoji: "👔", category: "synthetic", origin: "Factory", madeFrom: "Chemicals from petroleum" },
-  { id: "plastic", name: "Plastic", emoji: "🧴", category: "synthetic", origin: "Factory", madeFrom: "Chemicals from petroleum" },
-  { id: "acrylic", name: "Acrylic", emoji: "🧶", category: "synthetic", origin: "Factory", madeFrom: "Chemicals" },
+  { id: "cotton", name: "Cotton", emoji: "🌿", category: "natural", origin: "Cotton plant", madeFrom: "Plant fibres", image: "/images/cotton_plant_fabric.jpg" },
+  { id: "wool", name: "Wool", emoji: "🐑", category: "natural", origin: "Sheep", madeFrom: "Animal hair", image: "/images/wool_sheep_fleece.jpg" },
+  { id: "silk", name: "Silk", emoji: "🐛", category: "natural", origin: "Silkworm", madeFrom: "Silkworm cocoon", image: "/images/silk_cocoon_moth.jpg" },
+  { id: "wood", name: "Wood", emoji: "🪵", category: "natural", origin: "Trees", madeFrom: "Tree trunk", image: "/images/rubber_tree_wood.jpg" },
+  { id: "rubber_natural", name: "Natural Rubber", emoji: "🌴", category: "natural", origin: "Rubber tree", madeFrom: "Tree sap (latex)", image: "/images/rubber_tree_wood.jpg" },
+  { id: "nylon", name: "Nylon", emoji: "🧵", category: "synthetic", origin: "Factory", madeFrom: "Chemicals from petroleum", image: "/images/nylon_climbing_rope.jpg" },
+  { id: "polyester", name: "Polyester", emoji: "👔", category: "synthetic", origin: "Factory", madeFrom: "Chemicals from petroleum", image: "/images/polyester_jacket_fabric.jpg" },
+  { id: "plastic", name: "Plastic", emoji: "🧴", category: "synthetic", origin: "Factory", madeFrom: "Chemicals from petroleum", image: "/images/plastic_insulator_lab.jpg" },
+  { id: "acrylic", name: "Acrylic", emoji: "🧶", category: "synthetic", origin: "Factory", madeFrom: "Chemicals", image: "/images/wool_sheep_fleece.jpg" },
 ];
 
+function shuffleMaterials(items: MaterialItem[]): MaterialItem[] {
+  const arr = [...items];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 const EVERYDAY_OBJECTS = [
-  { emoji: "👕", label: "Shirt", material: "Cloth" },
+  { emoji: "👕", label: "Shirt", material: "Cloth (Cotton/Polyester)" },
   { emoji: "🧴", label: "Bottle", material: "Plastic" },
-  { emoji: "🥄", label: "Spoon", material: "Metal" },
+  { emoji: "🥄", label: "Spoon", material: "Metal (Stainless Steel)" },
   { emoji: "🪢", label: "Rope", material: "Nylon / Jute" },
-  { emoji: "🛞", label: "Tyre", material: "Rubber" },
+  { emoji: "🛞", label: "Tyre", material: "Synthetic Rubber" },
   { emoji: "🧶", label: "Sweater", material: "Wool / Acrylic" },
   { emoji: "🪵", label: "Wooden toy", material: "Wood" },
 ];
@@ -57,9 +70,8 @@ export default function OriginsPage() {
   const [inspectedObjects, setInspectedObjects] = useState<Set<string>>(new Set());
   const [natureBin, setNatureBin] = useState<MaterialItem[]>([]);
   const [factoryBin, setFactoryBin] = useState<MaterialItem[]>([]);
-  const [unsorted, setUnsorted] = useState<MaterialItem[]>([...MATERIALS]);
+  const [unsorted, setUnsorted] = useState<MaterialItem[]>(() => shuffleMaterials(MATERIALS));
   const [currentDrag, setCurrentDrag] = useState<string | null>(null);
-  const [showResults, setShowResults] = useState(false);
   const [mistakes, setMistakes] = useState<string[]>([]);
   const [selectedItem, setSelectedItem] = useState<MaterialItem | null>(null);
   const [showVoiceModal, setShowVoiceModal] = useState(false);
@@ -75,7 +87,6 @@ export default function OriginsPage() {
     } catch {}
   }, []);
 
-  // Save phase on change
   const changePhase = (nextPhase: Phase) => {
     playClickSound();
     setPhase(nextPhase);
@@ -84,7 +95,6 @@ export default function OriginsPage() {
     } catch {}
   };
 
-  // Back step navigation
   const goBackStep = () => {
     playClickSound();
     if (phase === "sorting") changePhase("inspect");
@@ -92,13 +102,22 @@ export default function OriginsPage() {
     else if (phase === "exam-bridge") changePhase("concept");
   };
 
+  const resetSorting = () => {
+    playPopSound();
+    setNatureBin([]);
+    setFactoryBin([]);
+    setUnsorted(shuffleMaterials(MATERIALS));
+    setSelectedItem(null);
+    setMistakes([]);
+    speak("Sorting board reset! Let's sort natural vs synthetic materials!");
+  };
+
   const inspectObject = useCallback((label: string) => {
     setInspectedObjects((prev) => new Set(prev).add(label));
   }, []);
 
-  const allInspected = inspectedObjects.size >= 5; // Need at least 5 to proceed
+  const allInspected = inspectedObjects.size >= 5;
 
-  // Handle dropping a material into a bin with immediate sound, speech reasoning, and diagnostic logging
   const handleDrop = useCallback(
     (bin: "nature" | "factory", item: MaterialItem) => {
       const isCorrect = 
@@ -121,20 +140,20 @@ export default function OriginsPage() {
         logChildAttempt(
           item.category === "natural" ? "natural_material" : "synthetic_material",
           true,
-          `Correctly classified ${item.name} as ${item.category} (${item.origin})`,
+          `Correctly sorted ${item.name} into ${bin === "nature" ? "From Nature" : "Made by People"}`,
           "origins"
         );
       } else {
         playWarningSound();
-        setMistakes((prev) => [...prev, item.id]);
-        const reason = item.category === "natural"
-          ? `Actually, ${item.name} comes from ${item.origin}! It's a natural material.`
-          : `Actually, ${item.name} is made in factories from chemicals! It's synthetic.`;
-        speak(reason);
+        const hint = bin === "nature"
+          ? `Oops! ${item.name} doesn't grow in nature — it is man-made in a factory!`
+          : `Not quite! ${item.name} comes from ${item.origin} in nature!`;
+        speak(hint);
+        setMistakes((prev) => [...prev, item.name]);
         logChildAttempt(
           item.category === "natural" ? "natural_material" : "synthetic_material",
           false,
-          `Misclassified ${item.name} into ${bin} (actually ${item.category})`,
+          `Misplaced ${item.name} into ${bin === "nature" ? "From Nature" : "Made by People"}`,
           "origins"
         );
       }
@@ -142,16 +161,18 @@ export default function OriginsPage() {
     []
   );
 
-  // Check if all sorted
   const allSorted = unsorted.length === 0;
-
-  // Calculate score
-  const correctCount = MATERIALS.length - mistakes.length;
+  const correctCount =
+    natureBin.filter((m) => m.category === "natural").length +
+    factoryBin.filter((m) => m.category === "synthetic").length;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="max-w-5xl mx-auto px-4 py-6 sm:py-8 font-nunito">
       <AnimatePresence mode="wait">
-        {/* ========== PHASE 1: INSPECT OBJECTS ========== */}
+        
+        {/* ============================================================
+            PHASE 1: INSPECT EVERYDAY OBJECTS
+            ============================================================ */}
         {phase === "inspect" && (
           <motion.div
             key="inspect"
@@ -160,96 +181,94 @@ export default function OriginsPage() {
             exit={{ opacity: 0, y: -20 }}
             className="flex flex-col items-center"
           >
-            {/* Pip intro */}
             <div className="text-center mb-8">
-              <motion.div
-                className="inline-block text-6xl mb-4"
-                animate={{ rotate: [0, -5, 5, 0] }}
-                transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-              >
-                🔬
-              </motion.div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-text-dark mb-3">
+              <span className="text-5xl block mb-2 animate-bounce">🔬</span>
+              <h1 className="text-2xl sm:text-3xl font-black text-text-dark mb-2">
                 What are things made from?
               </h1>
-              <div className="speech-bubble mx-auto">
-                <p className="text-base text-text-dark">
-                  Look at these everyday things. Tap each one to discover
-                  what it&apos;s made from!
+              <div className="speech-bubble mx-auto max-w-xl">
+                <p className="text-base text-text-dark font-semibold">
+                  Pip says: &ldquo;Tap at least 5 objects on my workbench to discover their secret ingredients!&rdquo;
                 </p>
               </div>
             </div>
 
-            {/* Objects on the table */}
-            <div className="relative w-full bg-gradient-to-b from-lab-wood-light/15 to-lab-wood/10 rounded-2xl border border-lab-wood/15 p-6 sm:p-8">
-              <div className="grid grid-cols-3 sm:grid-cols-4 gap-4 sm:gap-6 justify-items-center">
+            <div className="bg-white rounded-3xl border-2 border-lab-wood/25 p-6 sm:p-8 w-full shadow-warm mb-8">
+              <div className="flex justify-between items-center mb-6">
+                <span className="text-xs font-black uppercase tracking-wider text-text-muted">
+                  Workbench Specimens ({inspectedObjects.size} of {EVERYDAY_OBJECTS.length} Inspected)
+                </span>
+                <span className="text-xs font-black text-pip-blue bg-pip-blue/10 px-3 py-1 rounded-full">
+                  Step 1: Curiosity Inspection
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {EVERYDAY_OBJECTS.map((obj) => {
                   const isInspected = inspectedObjects.has(obj.label);
                   return (
                     <motion.button
                       key={obj.label}
-                      onClick={() => inspectObject(obj.label)}
-                      className={`flex flex-col items-center gap-2 p-4 rounded-xl transition-all ${
+                      type="button"
+                      onClick={() => {
+                        inspectObject(obj.label);
+                        playPopSound();
+                        speak(`${obj.label} is made from ${obj.material}!`);
+                      }}
+                      className={`p-5 rounded-3xl border-2 flex flex-col items-center gap-2 text-center transition-all cursor-pointer ${
                         isInspected
-                          ? "bg-success/10 border border-success/20"
-                          : "bg-white/60 border border-lab-wood/10 hover:border-pip-blue/30 hover:bg-white"
+                          ? "border-nature-green bg-emerald-50/60 shadow-soft scale-102"
+                          : "border-lab-wood/20 bg-lab-chalk/50 hover:border-pip-blue/50 hover:bg-white"
                       }`}
-                      whileHover={{ scale: 1.05, y: -3 }}
+                      whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
-                      <span className="text-4xl sm:text-5xl">{obj.emoji}</span>
-                      <span className="text-sm font-semibold text-text-dark">
-                        {obj.label}
-                      </span>
-                      <AnimatePresence>
-                        {isInspected && (
-                          <motion.span
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: "auto" }}
-                            className="text-xs text-text-muted bg-lab-chalk px-2 py-0.5 rounded-full"
-                          >
-                            {obj.material}
-                          </motion.span>
-                        )}
-                      </AnimatePresence>
+                      <span className="text-4xl">{obj.emoji}</span>
+                      <span className="font-extrabold text-sm text-text-dark">{obj.label}</span>
+                      {isInspected ? (
+                        <span className="text-[11px] font-black text-nature-green-dark bg-white px-2.5 py-0.5 rounded-full border border-nature-green/30 shadow-xs">
+                          {obj.material} ✓
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-text-muted font-bold">Tap to Inspect 🔍</span>
+                      )}
                     </motion.button>
                   );
                 })}
               </div>
             </div>
 
-            {/* Reveal concept */}
             <AnimatePresence>
               {allInspected && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mt-8 text-center"
+                  className="text-center space-y-4"
                 >
-                  <div className="bg-white rounded-xl border border-pip-blue/15 px-6 py-4 mb-6 max-w-md mx-auto">
-                    <p className="text-lg font-bold text-pip-blue-dark">
-                      A <span className="science-term">material</span> is the
-                      stuff we use to make things.
-                    </p>
-                    <p className="text-sm text-text-muted mt-2">
-                      Everything around you is made from some kind of material!
+                  <div className="bg-pip-blue/10 border-2 border-pip-blue/30 px-6 py-4 rounded-2xl max-w-md mx-auto">
+                    <p className="text-base font-black text-pip-blue-dark">
+                      A <KidTermTooltip term="material" displayText="material" /> is the stuff we use to make everything around us!
                     </p>
                   </div>
-                    <motion.button
-                      onClick={() => changePhase("sorting")}
-                      className="px-8 py-3 bg-pip-blue text-white font-bold rounded-lg shadow-soft text-lg"
-                      whileHover={{ scale: 1.03, y: -2 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      Where do materials come from? Sort them! →
-                    </motion.button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
-          )}
 
-        {/* ========== PHASE 2: SORTING — Nature vs Factory ========== */}
+                  <motion.button
+                    onClick={() => changePhase("sorting")}
+                    className="px-8 py-4 bg-gradient-to-r from-pip-blue to-indigo-600 hover:from-pip-blue-dark hover:to-indigo-700 text-white font-black rounded-2xl shadow-warm text-base flex items-center justify-center gap-2 mx-auto transition-all"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <span>Where do materials come from? Sort them! ➔</span>
+                    <ArrowRight size={18} />
+                  </motion.button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        )}
+
+        {/* ============================================================
+            PHASE 2: SORTING LAB (NATURE VS MADE BY PEOPLE)
+            ============================================================ */}
         {phase === "sorting" && (
           <motion.div
             key="sorting"
@@ -257,8 +276,8 @@ export default function OriginsPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
           >
-            {/* Top Navigation & Back to Inspect */}
-            <div className="flex items-center justify-between mb-4">
+            {/* Header Controls */}
+            <div className="flex items-center justify-between mb-6">
               <button
                 onClick={goBackStep}
                 className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-lab-chalk text-text-dark font-extrabold text-xs border border-lab-wood/20 shadow-xs transition-all"
@@ -267,26 +286,38 @@ export default function OriginsPage() {
                 <span>← Back to Object Inspection</span>
               </button>
 
-              <span className="text-xs font-black text-pip-blue bg-pip-blue/10 px-3 py-1 rounded-full">
-                Step 2 of 4: Sorting Lab
-              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={resetSorting}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-lab-chalk text-text-dark font-extrabold text-xs border border-lab-wood/20 shadow-xs transition-all"
+                  title="Shuffle & Reset Items"
+                >
+                  <RotateCcw size={13} />
+                  <span>Shuffle & Reset</span>
+                </button>
+
+                <span className="text-xs font-black text-pip-blue bg-pip-blue/10 px-3 py-1.5 rounded-full">
+                  Step 2 of 4: Sorting Lab
+                </span>
+              </div>
             </div>
 
-            {/* Pip prompt */}
+            {/* Pip Prompt */}
             <div className="text-center mb-6">
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-text-dark mb-2">
+              <h1 className="text-2xl sm:text-3xl font-black text-text-dark mb-2">
                 Nature or Made by People?
               </h1>
-              <div className="speech-bubble mx-auto">
-                <p className="text-base">
-                  Some materials come from <KidTermTooltip term="natural" displayText="Nature" />. Others are <KidTermTooltip term="synthetic" displayText="Synthetic" /> (made by people in factories). Can you sort them?
+              <div className="speech-bubble mx-auto max-w-xl">
+                <p className="text-base text-text-dark font-semibold">
+                  Some materials come from <KidTermTooltip term="natural" displayText="Nature 🌿" />. Others are <KidTermTooltip term="synthetic" displayText="Synthetic 🏭" /> (made by people in factories). Tap or drag to sort!
                 </p>
               </div>
             </div>
 
-            {/* Sorting area — 60-70% of screen */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 min-h-[55vh]">
-              {/* Nature bin */}
+            {/* Sorting Grid Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[50vh]">
+              
+              {/* ==================== LEFT BIN: FROM NATURE (GREEN) ==================== */}
               <motion.div
                 onClick={() => {
                   if (selectedItem) {
@@ -294,62 +325,61 @@ export default function OriginsPage() {
                     setSelectedItem(null);
                   }
                 }}
-                className={`drop-zone flex flex-col items-center p-4 cursor-pointer transition-all ${
-                  selectedItem ? "ring-2 ring-nature-green ring-offset-2 bg-nature-green/10" : ""
-                } ${currentDrag ? "active" : ""}`}
+                className={`flex flex-col items-center p-5 rounded-3xl border-3 transition-all cursor-pointer shadow-soft ${
+                  selectedItem 
+                    ? "ring-4 ring-emerald-400/40 bg-emerald-50/90 border-emerald-500 scale-101" 
+                    : "bg-emerald-50/50 border-emerald-300 hover:border-emerald-500"
+                }`}
                 whileHover={{ scale: 1.01 }}
               >
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-3xl">🌳</span>
+                <div className="flex items-center gap-3 mb-4 w-full">
+                  <span className="text-4xl">🌳</span>
                   <div className="text-left">
-                    <h2 className="text-lg font-extrabold text-nature-green-dark">
+                    <h2 className="text-lg font-black text-emerald-950">
                       From Nature
                     </h2>
-                    <p className="text-[11px] text-text-muted">Plants, Animals, Trees</p>
+                    <p className="text-xs text-emerald-700 font-bold">Plants, Animals, Trees</p>
                   </div>
                 </div>
 
                 {selectedItem && (
-                  <div className="mb-2 text-xs font-bold text-nature-green bg-white px-3 py-1 rounded-full border border-nature-green/30 animate-pulse">
+                  <div className="mb-3 text-xs font-black text-emerald-900 bg-white px-3.5 py-1.5 rounded-full border border-emerald-300 shadow-xs animate-pulse">
                     Tap to put &ldquo;{selectedItem.name}&rdquo; here! 🌿
                   </div>
                 )}
 
-                <div className="flex-1 w-full bg-white/60 rounded-xl p-3 min-h-[140px] border border-nature-green/20">
-                  <div className="flex flex-wrap gap-2">
-                    {natureBin.map((item) => (
+                <div className="flex-1 w-full bg-white/90 rounded-2xl p-3.5 min-h-[160px] border border-emerald-200 flex flex-wrap content-start gap-2">
+                  {natureBin.map((item) => {
+                    const isCorrect = item.category === "natural";
+                    return (
                       <motion.div
                         key={item.id}
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold shadow-xs ${
-                          item.category === "natural"
-                            ? "bg-nature-green/15 text-nature-green-dark border border-nature-green/30"
-                            : "bg-fire-red/10 text-fire-red border border-fire-red/20"
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black shadow-xs ${
+                          isCorrect
+                            ? "bg-emerald-100 text-emerald-950 border-2 border-emerald-400"
+                            : "bg-rose-100 text-rose-950 border-2 border-rose-400 animate-shake"
                         }`}
                       >
                         <span className="text-base">{item.emoji}</span>
                         <span>{item.name}</span>
-                        {item.category === "natural" ? (
-                          <span className="text-nature-green">✓</span>
-                        ) : (
-                          <span className="text-fire-red">✗</span>
-                        )}
+                        <span>{isCorrect ? "✓" : "✗"}</span>
                       </motion.div>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
               </motion.div>
 
-              {/* Unsorted items — center */}
+              {/* ==================== CENTER: UNSORTED ITEMS POOL ==================== */}
               <div className="flex flex-col items-center">
                 <div className="text-center mb-3">
-                  <p className="text-xs font-extrabold uppercase tracking-wider text-text-muted">
-                    {unsorted.length > 0 ? "Tap an item, drag, or choose a bin 👇" : "All Sorted! 🎉"}
+                  <p className="text-xs font-black uppercase tracking-wider text-text-muted">
+                    {unsorted.length > 0 ? `Unsorted Items (${unsorted.length} remaining)` : "All Sorted! 🎉"}
                   </p>
                 </div>
 
-                <div className="flex flex-wrap justify-center gap-3.5 w-full">
+                <div className="flex flex-wrap justify-center gap-3 w-full">
                   {unsorted.map((item) => {
                     const isSelected = selectedItem?.id === item.id;
                     return (
@@ -371,25 +401,32 @@ export default function OriginsPage() {
                             setSelectedItem(null);
                           }
                         }}
-                        onClick={() => {
-                          setSelectedItem(isSelected ? null : item);
-                        }}
-                        className={`relative group flex flex-col items-center p-3 rounded-2xl bg-white border-2 transition-all shadow-soft cursor-grab active:cursor-grabbing select-none ${
+                        onClick={() => setSelectedItem(isSelected ? null : item)}
+                        className={`relative group flex flex-col items-center p-3.5 rounded-3xl bg-white border-3 transition-all shadow-soft cursor-grab active:cursor-grabbing select-none ${
                           isSelected
-                            ? "border-pip-blue ring-4 ring-pip-blue/20 scale-105"
-                            : "border-lab-wood/25 hover:border-pip-blue/40"
+                            ? "border-pip-blue ring-4 ring-pip-blue/30 scale-105"
+                            : "border-lab-wood/20 hover:border-pip-blue/50"
                         }`}
                         whileHover={{ y: -3 }}
-                        whileTap={{ scale: 0.96 }}
+                        whileTap={{ scale: 0.95 }}
                         layout
                       >
-                        <span className="text-4xl mb-1">{item.emoji}</span>
-                        <span className="text-xs font-bold text-text-dark text-center">
+                        {item.image ? (
+                          <img
+                            src={item.image}
+                            alt={item.name}
+                            className="w-16 h-16 rounded-2xl object-cover mb-1.5 border border-lab-wood/15 shadow-xs"
+                          />
+                        ) : (
+                          <span className="text-4xl mb-1">{item.emoji}</span>
+                        )}
+
+                        <span className="text-xs font-black text-text-dark text-center">
                           {item.name}
                         </span>
 
-                        {/* Quick Sort Direct Action Buttons */}
-                        <div className="mt-2 flex items-center gap-1.5">
+                        {/* Fast Choice Action Buttons */}
+                        <div className="mt-2.5 flex items-center gap-1.5">
                           <button
                             type="button"
                             onClick={(e) => {
@@ -397,8 +434,8 @@ export default function OriginsPage() {
                               handleDrop("nature", item);
                               setSelectedItem(null);
                             }}
-                            className="px-2 py-1 bg-nature-green/10 hover:bg-nature-green text-nature-green-dark hover:text-white rounded-lg text-[10px] font-extrabold transition-colors border border-nature-green/30"
-                            title="Sort into Nature"
+                            className="px-2.5 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-[10px] font-black shadow-xs transition-transform active:scale-90"
+                            title="Put in Nature Bin"
                           >
                             🌳 Nature
                           </button>
@@ -409,10 +446,10 @@ export default function OriginsPage() {
                               handleDrop("factory", item);
                               setSelectedItem(null);
                             }}
-                            className="px-2 py-1 bg-factory-orange/10 hover:bg-factory-orange text-factory-orange-dark hover:text-white rounded-lg text-[10px] font-extrabold transition-colors border border-factory-orange/30"
-                            title="Sort into Factory"
+                            className="px-2.5 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-[10px] font-black shadow-xs transition-transform active:scale-90"
+                            title="Put in Made by People Bin"
                           >
-                            🏭 Factory
+                            🏭 People
                           </button>
                         </div>
                       </motion.div>
@@ -425,8 +462,8 @@ export default function OriginsPage() {
                       animate={{ opacity: 1, scale: 1 }}
                       className="text-center py-6"
                     >
-                      <span className="text-5xl block mb-2">🎉</span>
-                      <p className="text-base font-extrabold text-text-dark">
+                      <span className="text-6xl block mb-2 animate-bounce">🎉</span>
+                      <p className="text-base font-black text-text-dark">
                         Awesome! All items sorted!
                       </p>
                     </motion.div>
@@ -434,7 +471,7 @@ export default function OriginsPage() {
                 </div>
               </div>
 
-              {/* Factory bin */}
+              {/* ==================== RIGHT BIN: MADE BY PEOPLE (BLUE) ==================== */}
               <motion.div
                 onClick={() => {
                   if (selectedItem) {
@@ -442,94 +479,98 @@ export default function OriginsPage() {
                     setSelectedItem(null);
                   }
                 }}
-                className={`drop-zone flex flex-col items-center p-4 cursor-pointer transition-all ${
-                  selectedItem ? "ring-2 ring-factory-orange ring-offset-2 bg-factory-orange/10" : ""
-                } ${currentDrag ? "active" : ""}`}
+                className={`flex flex-col items-center p-5 rounded-3xl border-3 transition-all cursor-pointer shadow-soft ${
+                  selectedItem 
+                    ? "ring-4 ring-blue-400/40 bg-blue-50/90 border-blue-500 scale-101" 
+                    : "bg-blue-50/50 border-blue-300 hover:border-blue-500"
+                }`}
                 whileHover={{ scale: 1.01 }}
               >
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-3xl">🏭</span>
+                <div className="flex items-center gap-3 mb-4 w-full">
+                  <span className="text-4xl">🏭</span>
                   <div className="text-left">
-                    <h2 className="text-lg font-extrabold text-factory-orange-dark">
+                    <h2 className="text-lg font-black text-blue-950">
                       Made by People
                     </h2>
-                    <p className="text-[11px] text-text-muted">Factories, Chemicals, Polymers</p>
+                    <p className="text-xs text-blue-700 font-bold">Factories, Chemicals, Polymers</p>
                   </div>
                 </div>
 
                 {selectedItem && (
-                  <div className="mb-2 text-xs font-bold text-factory-orange bg-white px-3 py-1 rounded-full border border-factory-orange/30 animate-pulse">
+                  <div className="mb-3 text-xs font-black text-blue-900 bg-white px-3.5 py-1.5 rounded-full border border-blue-300 shadow-xs animate-pulse">
                     Tap to put &ldquo;{selectedItem.name}&rdquo; here! ⚙️
                   </div>
                 )}
 
-                <div className="flex-1 w-full bg-white/60 rounded-xl p-3 min-h-[140px] border border-factory-orange/20">
-                  <div className="flex flex-wrap gap-2">
-                    {factoryBin.map((item) => (
+                <div className="flex-1 w-full bg-white/90 rounded-2xl p-3.5 min-h-[160px] border border-blue-200 flex flex-wrap content-start gap-2">
+                  {factoryBin.map((item) => {
+                    const isCorrect = item.category === "synthetic";
+                    return (
                       <motion.div
                         key={item.id}
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold shadow-xs ${
-                          item.category === "synthetic"
-                            ? "bg-factory-orange/15 text-factory-orange-dark border border-factory-orange/30"
-                            : "bg-fire-red/10 text-fire-red border border-fire-red/20"
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black shadow-xs ${
+                          isCorrect
+                            ? "bg-blue-100 text-blue-950 border-2 border-blue-400"
+                            : "bg-rose-100 text-rose-950 border-2 border-rose-400 animate-shake"
                         }`}
                       >
                         <span className="text-base">{item.emoji}</span>
                         <span>{item.name}</span>
-                        {item.category === "synthetic" ? (
-                          <span className="text-factory-orange">✓</span>
-                        ) : (
-                          <span className="text-fire-red">✗</span>
-                        )}
+                        <span>{isCorrect ? "✓" : "✗"}</span>
                       </motion.div>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
               </motion.div>
+
             </div>
 
-            {/* Check results */}
+            {/* Results Button */}
             {allSorted && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mt-8 text-center"
+                className="mt-8 text-center bg-white p-6 rounded-3xl border-2 border-lab-wood/20 shadow-soft max-w-lg mx-auto"
               >
-                <p className="text-lg font-semibold text-text-dark mb-4">
+                <h3 className="text-xl font-black text-text-dark mb-2">
                   {correctCount === MATERIALS.length
-                    ? "Perfect! You sorted them all correctly! 🎉"
-                    : `You got ${correctCount} out of ${MATERIALS.length} right!`}
-                </p>
+                    ? "🌟 Perfect Score! You sorted them all correctly!"
+                    : `You got ${correctCount} out of ${MATERIALS.length} correct!`}
+                </h3>
+
                 {mistakes.length > 0 && (
-                  <p className="text-sm text-text-muted mb-4">
-                    Don&apos;t worry — let&apos;s learn which ones tricked you.
+                  <p className="text-xs text-text-muted mb-4">
+                    Take a quick look at the science behind each material below:
                   </p>
                 )}
+
                 <motion.button
                   onClick={() => changePhase("concept")}
-                  className="px-8 py-3 bg-pip-blue text-white font-bold rounded-lg shadow-soft text-lg"
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.98 }}
+                  className="px-8 py-3.5 bg-gradient-to-r from-pip-blue to-indigo-600 hover:from-pip-blue-dark hover:to-indigo-700 text-white font-black rounded-2xl shadow-soft text-sm flex items-center justify-center gap-2 mx-auto transition-all"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                 >
-                  Discover the secret science →
+                  <span>Discover the Secret Science Concepts ➔</span>
+                  <ArrowRight size={16} />
                 </motion.button>
               </motion.div>
             )}
           </motion.div>
         )}
 
-        {/* ========== PHASE 3: CONCEPT — Natural vs Synthetic ========== */}
+        {/* ============================================================
+            PHASE 3: CONCEPT EXPLANATIONS WITH GENERATED GRAPHICS
+            ============================================================ */}
         {phase === "concept" && (
           <motion.div
             key="concept"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="max-w-2xl mx-auto"
+            className="max-w-3xl mx-auto"
           >
-            {/* Top Navigation & Back Button */}
             <div className="flex items-center justify-between mb-6">
               <button
                 onClick={goBackStep}
@@ -544,154 +585,94 @@ export default function OriginsPage() {
               </span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-text-dark text-center mb-8">
-              The Two Kinds of Materials
+            <h1 className="text-2xl sm:text-3xl font-black text-text-dark text-center mb-8">
+              The Two Big Families of Materials
             </h1>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
-              {/* Natural */}
-              <motion.div
-                initial={{ x: -30, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: 0.2 }}
-                className="bg-nature-green/8 border border-nature-green/20 rounded-2xl p-6"
-              >
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="text-3xl">🌳</span>
+              {/* Natural Family */}
+              <div className="bg-emerald-50/70 border-3 border-emerald-300 rounded-3xl p-6 shadow-soft space-y-4">
+                <div className="flex items-center gap-3">
+                  <span className="text-4xl">🌿</span>
                   <div>
-                    <h2 className="text-xl font-bold text-nature-green-dark">
-                      <KidTermTooltip term="natural" displayText="Natural Material" />
+                    <h2 className="text-lg font-black text-emerald-950">
+                      <KidTermTooltip term="natural" displayText="Natural Materials" />
                     </h2>
-                    <p className="text-sm text-text-muted">
-                      Comes directly from nature
-                    </p>
+                    <p className="text-xs text-emerald-700 font-bold">Harvested directly from Nature</p>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  {MATERIALS.filter((m) => m.category === "natural").map(
-                    (m) => (
-                      <div
-                        key={m.id}
-                        className="flex items-center gap-2 text-sm"
-                      >
-                        <span>{m.emoji}</span>
-                        <span className="font-medium text-text-dark">
-                          {m.name}
-                        </span>
-                        <span className="text-text-light">— {m.origin}</span>
-                      </div>
-                    )
-                  )}
-                </div>
-              </motion.div>
 
-              {/* Synthetic */}
-              <motion.div
-                initial={{ x: 30, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: 0.3 }}
-                className="bg-factory-orange/8 border border-factory-orange/20 rounded-2xl p-6"
-              >
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="text-3xl">🏭</span>
+                <div className="grid grid-cols-2 gap-2.5">
+                  {[
+                    { name: "Cotton", img: "/images/cotton_plant_fabric.jpg", sub: "From cotton plant bolls" },
+                    { name: "Wool", img: "/images/wool_sheep_fleece.jpg", sub: "From sheep fleece" },
+                    { name: "Silk", img: "/images/silk_cocoon_moth.jpg", sub: "From silkworm cocoons" },
+                    { name: "Rubber", img: "/images/rubber_tree_wood.jpg", sub: "From rubber tree sap" },
+                  ].map((item) => (
+                    <div key={item.name} className="bg-white p-2.5 rounded-2xl border border-emerald-200 text-center flex flex-col items-center">
+                      <img src={item.img} alt={item.name} className="w-14 h-14 rounded-xl object-cover mb-1 border" />
+                      <span className="text-xs font-black text-emerald-950">{item.name}</span>
+                      <span className="text-[9px] text-text-muted">{item.sub}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Synthetic Family */}
+              <div className="bg-blue-50/70 border-3 border-blue-300 rounded-3xl p-6 shadow-soft space-y-4">
+                <div className="flex items-center gap-3">
+                  <span className="text-4xl">🏭</span>
                   <div>
-                    <h2 className="text-xl font-bold text-factory-orange-dark">
-                      <KidTermTooltip term="synthetic" displayText="Synthetic Material" />
+                    <h2 className="text-lg font-black text-blue-950">
+                      <KidTermTooltip term="synthetic" displayText="Synthetic Materials" />
                     </h2>
-                    <p className="text-sm text-text-muted">
-                      Made by people using chemicals
-                    </p>
+                    <p className="text-xs text-blue-700 font-bold">Created by scientists in factories</p>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  {MATERIALS.filter((m) => m.category === "synthetic").map(
-                    (m) => (
-                      <div
-                        key={m.id}
-                        className="flex items-center gap-2 text-sm"
-                      >
-                        <span>{m.emoji}</span>
-                        <span className="font-medium text-text-dark">
-                          {m.name}
-                        </span>
-                        <span className="text-text-light">— {m.madeFrom}</span>
-                      </div>
-                    )
-                  )}
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  {[
+                    { name: "Nylon", img: "/images/nylon_climbing_rope.jpg", sub: "Stronger than steel" },
+                    { name: "Polyester", img: "/images/polyester_jacket_fabric.jpg", sub: "Wrinkle-free & quick-dry" },
+                    { name: "Plastic", img: "/images/plastic_insulator_lab.jpg", sub: "Insulator & lightweight" },
+                    { name: "Acrylic", img: "/images/wool_sheep_fleece.jpg", sub: "Man-made warm wool" },
+                  ].map((item) => (
+                    <div key={item.name} className="bg-white p-2.5 rounded-2xl border border-blue-200 text-center flex flex-col items-center">
+                      <img src={item.img} alt={item.name} className="w-14 h-14 rounded-xl object-cover mb-1 border" />
+                      <span className="text-xs font-black text-blue-950">{item.name}</span>
+                      <span className="text-[9px] text-text-muted">{item.sub}</span>
+                    </div>
+                  ))}
                 </div>
-              </motion.div>
+              </div>
             </div>
-
-            {/* Scientific Reasoning Cards */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="bg-white rounded-2xl border-2 border-pip-blue/20 p-6 mb-6 shadow-soft"
-            >
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-2xl">🔬</span>
-                <h3 className="text-lg font-extrabold text-text-dark">
-                  The Science Reasoning: Why Does This Matter?
-                </h3>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs leading-relaxed text-text-dark">
-                <div className="bg-nature-green/10 p-3.5 rounded-xl border border-nature-green/20">
-                  <span className="font-extrabold text-nature-green-dark block mb-1">
-                    🌱 Why do Natural Fibres Breathe?
-                  </span>
-                  Cotton and wool fibres have natural microscopic pores and hollow tubes. They absorb moisture and allow air flow, making them <KidTermTooltip term="breathable" displayText="breathable" /> in hot weather!
-                </div>
-
-                <div className="bg-factory-orange/10 p-3.5 rounded-xl border border-factory-orange/20">
-                  <span className="font-extrabold text-factory-orange-dark block mb-1">
-                    ⚙️ Why are Synthetic Fibres so Tough?
-                  </span>
-                  Synthetic fibres like nylon are formed by chaining thousands of small chemical <KidTermTooltip term="monomer" displayText="monomer" /> units into unbroken <KidTermTooltip term="polymer" displayText="polymer" /> chains, giving them unmatched <KidTermTooltip term="tensile strength" displayText="tensile strength" />!
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Key insight */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="bg-lab-chalk/80 rounded-xl border border-lab-wood/20 p-5 text-center mb-6"
-            >
-              <p className="text-base text-text-dark mb-2">
-                <strong>Natural materials</strong> are obtained directly from nature (plants, animals, and earth).
-              </p>
-              <p className="text-base text-text-dark">
-                <strong>Synthetic materials</strong> are man-made through chemical processing of petrochemicals.
-              </p>
-            </motion.div>
 
             <div className="text-center">
               <motion.button
                 onClick={() => changePhase("exam-bridge")}
-                className="px-8 py-3 bg-pip-blue text-white font-bold rounded-lg shadow-soft text-lg"
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.98 }}
+                className="px-8 py-4 bg-gradient-to-r from-pip-blue to-indigo-600 hover:from-pip-blue-dark hover:to-indigo-700 text-white font-black rounded-2xl shadow-warm text-base flex items-center justify-center gap-2 mx-auto transition-all"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                See the science words →
+                <span>Check Your Understanding ➔</span>
+                <ArrowRight size={18} />
               </motion.button>
             </div>
           </motion.div>
         )}
 
-        {/* ========== PHASE 4: EXAM BRIDGE ========== */}
+        {/* ============================================================
+            PHASE 4: EXAM BRIDGE & VOICE UNLOCK
+            ============================================================ */}
         {phase === "exam-bridge" && (
           <motion.div
             key="exam-bridge"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="max-w-xl mx-auto"
+            className="max-w-2xl mx-auto space-y-6"
           >
-            {/* Top Navigation & Back Button */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-2">
               <button
                 onClick={goBackStep}
                 className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-lab-chalk text-text-dark font-extrabold text-xs border border-lab-wood/20 shadow-xs transition-all"
@@ -700,103 +681,58 @@ export default function OriginsPage() {
                 <span>← Back to Science Concepts</span>
               </button>
 
-              <span className="text-xs font-black text-pip-blue bg-pip-blue/10 px-3 py-1 rounded-full">
-                Step 4 of 4: Science Vocabulary
+              <span className="text-xs font-black text-nature-green-dark bg-nature-green/10 px-3 py-1 rounded-full">
+                Step 4 of 4: Mission Mastered!
               </span>
             </div>
 
-            <h1 className="text-2xl font-extrabold text-text-dark text-center mb-8">
-              Say it Like a Scientist
-            </h1>
-
-            {/* Exam bridge items */}
-            <div className="space-y-6 mb-10">
-              <div className="exam-bridge">
-                <p className="child-said">
-                  You said: &quot;It comes from nature&quot;
-                </p>
-                <p className="scientist-says">
-                  Scientists say:{" "}
-                  <span className="science-term">Natural material</span>
-                </p>
-                <p className="exam-answer">
-                  Natural materials are obtained directly from plants and
-                  animals. Examples include cotton, wool, silk, and natural
-                  rubber.
-                </p>
-              </div>
-
-              <div className="exam-bridge">
-                <p className="child-said">
-                  You said: &quot;People made it in a factory&quot;
-                </p>
-                <p className="scientist-says">
-                  Scientists say:{" "}
-                  <span className="science-term">Synthetic material</span>
-                </p>
-                <p className="exam-answer">
-                  Synthetic materials are man-made materials prepared by
-                  processing chemicals derived from petroleum. Examples include
-                  nylon, polyester, acrylic, and plastic.
-                </p>
-              </div>
-
-              <div className="exam-bridge">
-                <p className="child-said">
-                  You said: &quot;These things are made from stuff&quot;
-                </p>
-                <p className="scientist-says">
-                  Scientists say:{" "}
-                  <span className="science-term">Material</span>
-                </p>
-                <p className="exam-answer">
-                  A material is a substance or mixture of substances that
-                  constitutes an object. Materials can be natural or synthetic.
-                </p>
-              </div>
-            </div>
-
-            {/* Navigation & Magic Voice Unlock */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <Link
-                href="/play"
-                className="text-text-muted hover:text-text-dark transition-colors font-medium text-sm"
-              >
-                ← Back to Map
-              </Link>
-              
+            <div className="bg-white rounded-3xl p-6 sm:p-8 border-3 border-lab-wood/25 shadow-warm space-y-4">
               <div className="flex items-center gap-3">
+                <Sparkles className="w-7 h-7 text-amber-500" />
+                <h2 className="text-xl font-black text-text-dark">
+                  Class 8 Exam Secret Summary
+                </h2>
+              </div>
+
+              <div className="bg-amber-50/80 rounded-2xl p-4 border border-amber-200 space-y-2 text-xs leading-relaxed text-text-dark font-mono">
+                <p><strong>Natural Fibres:</strong> Obtained from plants (cotton, jute) and animals (wool, silk).</p>
+                <p><strong>Synthetic Fibres:</strong> Made by human beings through chemical processing of petrochemicals (nylon, polyester, acrylic).</p>
+              </div>
+
+              <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-3">
                 <button
                   onClick={() => setShowVoiceModal(true)}
-                  className="px-5 py-3 rounded-xl bg-gradient-to-r from-hint-yellow via-factory-orange-light to-pip-blue text-text-dark font-extrabold shadow-soft hover:shadow-medium transition-all flex items-center gap-2 text-sm animate-pulse"
+                  className="w-full sm:w-auto px-6 py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-black rounded-2xl shadow-soft text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
                 >
-                  <Mic size={16} />
-                  <span>Say &ldquo;NATURAL&rdquo; to Unlock 🪄</span>
+                  <span>🎙️ Voice Password Unlock: Say &ldquo;SYNTHETIC&rdquo;</span>
                 </button>
 
                 <Link
                   href="/play/fibres"
-                  className="px-6 py-3 bg-pip-blue text-white font-bold rounded-xl shadow-soft hover:bg-pip-blue-dark transition-colors text-sm"
+                  onClick={() => playClickSound()}
+                  className="w-full sm:w-auto px-6 py-3.5 bg-nature-green hover:bg-nature-green-dark text-white font-black rounded-2xl shadow-soft text-xs flex items-center justify-center gap-2 transition-all"
                 >
-                  Next: Fibres →
+                  <span>Next: Meet The 4 Fabrics ➔</span>
+                  <ArrowRight size={14} />
                 </Link>
               </div>
             </div>
-
-            <VoiceUnlockModal
-              isOpen={showVoiceModal}
-              targetWord="NATURAL"
-              wordMeaning="Comes directly from plants and animals!"
-              nextRoute="/play/fibres"
-              onSuccess={() => {
-                setShowVoiceModal(false);
-                router.push("/play/fibres");
-              }}
-              onClose={() => setShowVoiceModal(false)}
-            />
           </motion.div>
         )}
+
       </AnimatePresence>
+
+      <VoiceUnlockModal
+        isOpen={showVoiceModal}
+        onClose={() => setShowVoiceModal(false)}
+        targetWord="SYNTHETIC"
+        wordMeaning="Man-made materials created from petroleum chemicals in laboratories!"
+        nextRoute="/play/fibres"
+        onSuccess={() => {
+          setShowVoiceModal(false);
+          router.push("/play/fibres");
+        }}
+      />
     </div>
   );
 }
