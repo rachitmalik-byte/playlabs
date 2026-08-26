@@ -58,6 +58,7 @@ export default function OriginsPage() {
   const [currentDrag, setCurrentDrag] = useState<string | null>(null);
   const [showResults, setShowResults] = useState(false);
   const [mistakes, setMistakes] = useState<string[]>([]);
+  const [selectedItem, setSelectedItem] = useState<MaterialItem | null>(null);
   const [showVoiceModal, setShowVoiceModal] = useState(false);
   const router = useRouter();
 
@@ -216,158 +217,209 @@ export default function OriginsPage() {
             </div>
 
             {/* Sorting area — 60-70% of screen */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-[55vh]">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 min-h-[55vh]">
               {/* Nature bin */}
-              <div
-                className={`drop-zone flex flex-col items-center p-4 ${
-                  currentDrag ? "active" : ""
-                }`}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => {
-                  const itemId = e.dataTransfer.getData("text/plain");
-                  const item = MATERIALS.find((m) => m.id === itemId);
-                  if (item) handleDrop("nature", item);
-                  setCurrentDrag(null);
+              <motion.div
+                onClick={() => {
+                  if (selectedItem) {
+                    handleDrop("nature", selectedItem);
+                    setSelectedItem(null);
+                  }
                 }}
+                className={`drop-zone flex flex-col items-center p-4 cursor-pointer transition-all ${
+                  selectedItem ? "ring-2 ring-nature-green ring-offset-2 bg-nature-green/10" : ""
+                } ${currentDrag ? "active" : ""}`}
+                whileHover={{ scale: 1.01 }}
               >
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="text-2xl">🌳</span>
-                  <h2 className="text-lg font-bold text-nature-green">
-                    From Nature
-                  </h2>
+                  <span className="text-3xl">🌳</span>
+                  <div className="text-left">
+                    <h2 className="text-lg font-extrabold text-nature-green-dark">
+                      From Nature
+                    </h2>
+                    <p className="text-[11px] text-text-muted">Plants, Animals, Trees</p>
+                  </div>
                 </div>
-                <div className="flex-1 w-full bg-nature-green/5 rounded-lg p-3 min-h-[120px]">
+
+                {selectedItem && (
+                  <div className="mb-2 text-xs font-bold text-nature-green bg-white px-3 py-1 rounded-full border border-nature-green/30 animate-pulse">
+                    Tap to put &ldquo;{selectedItem.name}&rdquo; here! 🌿
+                  </div>
+                )}
+
+                <div className="flex-1 w-full bg-white/60 rounded-xl p-3 min-h-[140px] border border-nature-green/20">
                   <div className="flex flex-wrap gap-2">
                     {natureBin.map((item) => (
                       <motion.div
                         key={item.id}
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium ${
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold shadow-xs ${
                           item.category === "natural"
-                            ? "bg-nature-green/15 text-nature-green-dark border border-nature-green/20"
+                            ? "bg-nature-green/15 text-nature-green-dark border border-nature-green/30"
                             : "bg-fire-red/10 text-fire-red border border-fire-red/20"
                         }`}
                       >
-                        <span>{item.emoji}</span>
+                        <span className="text-base">{item.emoji}</span>
                         <span>{item.name}</span>
-                        {item.category !== "natural" && (
+                        {item.category === "natural" ? (
+                          <span className="text-nature-green">✓</span>
+                        ) : (
                           <span className="text-fire-red">✗</span>
                         )}
                       </motion.div>
                     ))}
                   </div>
                 </div>
-              </div>
+              </motion.div>
 
               {/* Unsorted items — center */}
               <div className="flex flex-col items-center">
-                <p className="text-sm text-text-muted mb-3 font-medium">
-                  Drag each material 👇
-                </p>
-                <div className="flex flex-wrap justify-center gap-3">
-                  {unsorted.map((item) => (
-                    <motion.div
-                      key={item.id}
-                      draggable
-                      onDragStart={(e) => {
-                        // Use the native DOM event for dataTransfer
-                        const nativeEvent = e as unknown as React.DragEvent;
-                        if (nativeEvent.dataTransfer) {
-                          nativeEvent.dataTransfer.setData("text/plain", item.id);
-                        }
-                        setCurrentDrag(item.id);
-                      }}
-                      onDragEnd={() => setCurrentDrag(null)}
-                      className="interactive-object flex flex-col items-center gap-1 px-4 py-3 bg-white rounded-xl border border-lab-wood/15 shadow-soft cursor-grab active:cursor-grabbing"
-                      whileHover={{ scale: 1.05, y: -3 }}
-                      whileTap={{ scale: 0.95 }}
-                      layout
-                    >
-                      <span className="text-3xl">{item.emoji}</span>
-                      <span className="text-xs font-semibold text-text-dark">
-                        {item.name}
-                      </span>
-                    </motion.div>
-                  ))}
-                  {unsorted.length === 0 && (
-                    <motion.p
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="text-text-muted text-sm py-8"
-                    >
-                      All sorted! 🎉
-                    </motion.p>
-                  )}
+                <div className="text-center mb-3">
+                  <p className="text-xs font-extrabold uppercase tracking-wider text-text-muted">
+                    {unsorted.length > 0 ? "Tap an item, drag, or choose a bin 👇" : "All Sorted! 🎉"}
+                  </p>
                 </div>
 
-                {/* Mobile: tap-to-sort buttons */}
-                {unsorted.length > 0 && (
-                  <div className="lg:hidden mt-4 flex gap-3 w-full">
-                    <button
-                      onClick={() => {
-                        const item = unsorted[0];
-                        if (item) handleDrop("nature", item);
-                      }}
-                      className="flex-1 py-2 px-4 bg-nature-green/10 text-nature-green font-semibold rounded-lg border border-nature-green/20 text-sm"
+                <div className="flex flex-wrap justify-center gap-3.5 w-full">
+                  {unsorted.map((item) => {
+                    const isSelected = selectedItem?.id === item.id;
+                    return (
+                      <motion.div
+                        key={item.id}
+                        drag
+                        dragSnapToOrigin={true}
+                        onDragStart={() => {
+                          setCurrentDrag(item.id);
+                          setSelectedItem(item);
+                        }}
+                        onDragEnd={(_e, info) => {
+                          setCurrentDrag(null);
+                          if (info.offset.x < -60) {
+                            handleDrop("nature", item);
+                            setSelectedItem(null);
+                          } else if (info.offset.x > 60) {
+                            handleDrop("factory", item);
+                            setSelectedItem(null);
+                          }
+                        }}
+                        onClick={() => {
+                          setSelectedItem(isSelected ? null : item);
+                        }}
+                        className={`relative group flex flex-col items-center p-3 rounded-2xl bg-white border-2 transition-all shadow-soft cursor-grab active:cursor-grabbing select-none ${
+                          isSelected
+                            ? "border-pip-blue ring-4 ring-pip-blue/20 scale-105"
+                            : "border-lab-wood/25 hover:border-pip-blue/40"
+                        }`}
+                        whileHover={{ y: -3 }}
+                        whileTap={{ scale: 0.96 }}
+                        layout
+                      >
+                        <span className="text-4xl mb-1">{item.emoji}</span>
+                        <span className="text-xs font-bold text-text-dark text-center">
+                          {item.name}
+                        </span>
+
+                        {/* Quick Sort Direct Action Buttons */}
+                        <div className="mt-2 flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDrop("nature", item);
+                              setSelectedItem(null);
+                            }}
+                            className="px-2 py-1 bg-nature-green/10 hover:bg-nature-green text-nature-green-dark hover:text-white rounded-lg text-[10px] font-extrabold transition-colors border border-nature-green/30"
+                            title="Sort into Nature"
+                          >
+                            🌳 Nature
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDrop("factory", item);
+                              setSelectedItem(null);
+                            }}
+                            className="px-2 py-1 bg-factory-orange/10 hover:bg-factory-orange text-factory-orange-dark hover:text-white rounded-lg text-[10px] font-extrabold transition-colors border border-factory-orange/30"
+                            title="Sort into Factory"
+                          >
+                            🏭 Factory
+                          </button>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+
+                  {unsorted.length === 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="text-center py-6"
                     >
-                      🌳 Nature
-                    </button>
-                    <button
-                      onClick={() => {
-                        const item = unsorted[0];
-                        if (item) handleDrop("factory", item);
-                      }}
-                      className="flex-1 py-2 px-4 bg-factory-orange/10 text-factory-orange font-semibold rounded-lg border border-factory-orange/20 text-sm"
-                    >
-                      🏭 Factory
-                    </button>
-                  </div>
-                )}
+                      <span className="text-5xl block mb-2">🎉</span>
+                      <p className="text-base font-extrabold text-text-dark">
+                        Awesome! All items sorted!
+                      </p>
+                    </motion.div>
+                  )}
+                </div>
               </div>
 
               {/* Factory bin */}
-              <div
-                className={`drop-zone flex flex-col items-center p-4 ${
-                  currentDrag ? "active" : ""
-                }`}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => {
-                  const itemId = e.dataTransfer.getData("text/plain");
-                  const item = MATERIALS.find((m) => m.id === itemId);
-                  if (item) handleDrop("factory", item);
-                  setCurrentDrag(null);
+              <motion.div
+                onClick={() => {
+                  if (selectedItem) {
+                    handleDrop("factory", selectedItem);
+                    setSelectedItem(null);
+                  }
                 }}
+                className={`drop-zone flex flex-col items-center p-4 cursor-pointer transition-all ${
+                  selectedItem ? "ring-2 ring-factory-orange ring-offset-2 bg-factory-orange/10" : ""
+                } ${currentDrag ? "active" : ""}`}
+                whileHover={{ scale: 1.01 }}
               >
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="text-2xl">🏭</span>
-                  <h2 className="text-lg font-bold text-factory-orange">
-                    Made by People
-                  </h2>
+                  <span className="text-3xl">🏭</span>
+                  <div className="text-left">
+                    <h2 className="text-lg font-extrabold text-factory-orange-dark">
+                      Made by People
+                    </h2>
+                    <p className="text-[11px] text-text-muted">Factories, Chemicals, Polymers</p>
+                  </div>
                 </div>
-                <div className="flex-1 w-full bg-factory-orange/5 rounded-lg p-3 min-h-[120px]">
+
+                {selectedItem && (
+                  <div className="mb-2 text-xs font-bold text-factory-orange bg-white px-3 py-1 rounded-full border border-factory-orange/30 animate-pulse">
+                    Tap to put &ldquo;{selectedItem.name}&rdquo; here! ⚙️
+                  </div>
+                )}
+
+                <div className="flex-1 w-full bg-white/60 rounded-xl p-3 min-h-[140px] border border-factory-orange/20">
                   <div className="flex flex-wrap gap-2">
                     {factoryBin.map((item) => (
                       <motion.div
                         key={item.id}
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium ${
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold shadow-xs ${
                           item.category === "synthetic"
-                            ? "bg-factory-orange/15 text-factory-orange-dark border border-factory-orange/20"
+                            ? "bg-factory-orange/15 text-factory-orange-dark border border-factory-orange/30"
                             : "bg-fire-red/10 text-fire-red border border-fire-red/20"
                         }`}
                       >
-                        <span>{item.emoji}</span>
+                        <span className="text-base">{item.emoji}</span>
                         <span>{item.name}</span>
-                        {item.category !== "synthetic" && (
+                        {item.category === "synthetic" ? (
+                          <span className="text-factory-orange">✓</span>
+                        ) : (
                           <span className="text-fire-red">✗</span>
                         )}
                       </motion.div>
                     ))}
                   </div>
                 </div>
-              </div>
+              </motion.div>
             </div>
 
             {/* Check results */}

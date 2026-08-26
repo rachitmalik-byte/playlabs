@@ -11,11 +11,14 @@ export default function SafetyMission() {
   const [sweatStage, setSweatStage] = useState<0 | 1 | 2>(0);
   const [draggedFabric, setDraggedFabric] = useState<string | null>(null);
 
-  const handleDragEnd = (fabric: string, info: any) => {
-    if (info.point.y > 200 && info.point.x > 300 && info.point.x < 500) {
-      setDraggedFabric(fabric);
-      setFireStage(2);
-    }
+  const handleTestFabric = (fabric: string) => {
+    setDraggedFabric(fabric);
+    setFireStage(2);
+  };
+
+  const handleDragEnd = (fabric: string, _info: any) => {
+    // Whenever dragged, trigger flame test
+    handleTestFabric(fabric);
   };
 
   return (
@@ -80,31 +83,49 @@ export default function SafetyMission() {
               )}
 
               {fireStage === 1 && (
-                <div className="flex flex-col items-center gap-8 relative h-96 border-2 border-dashed border-lab-wood-light rounded-xl p-8 bg-lab-chalk/50">
-                  <p className="text-xl font-bold mb-4">Drag a fabric towards the flame zone to test</p>
+                <div className="flex flex-col items-center gap-6 relative min-h-[380px] border-2 border-dashed border-lab-wood-light rounded-2xl p-8 bg-lab-chalk/50">
+                  <div className="text-center">
+                    <p className="text-xl font-bold mb-1">Click or drag a fabric into the flame zone</p>
+                    <p className="text-xs text-text-muted">Observe how each material reacts differently to heat!</p>
+                  </div>
                   
-                  <div className="flex gap-8 mb-8 z-10">
+                  <div className="flex flex-wrap justify-center gap-6 z-10">
                     <motion.div
                       drag
-                      dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+                      dragSnapToOrigin={true}
+                      onClick={() => handleTestFabric('cotton')}
                       onDragEnd={(e, info) => handleDragEnd('cotton', info)}
-                      className="cursor-grab active:cursor-grabbing bg-white p-4 rounded-lg shadow-md border-2 border-lab-wood"
+                      className="cursor-pointer bg-white p-4 rounded-2xl shadow-medium border-2 border-nature-green hover:border-nature-green-dark flex flex-col items-center gap-2"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                     >
-                      👕 Cotton
+                      <span className="text-4xl">👕</span>
+                      <span className="font-bold text-sm">Cotton Shirt</span>
+                      <span className="text-[11px] font-extrabold text-white bg-nature-green px-3 py-1 rounded-full shadow-xs">
+                        🔥 Test Cotton in Flame
+                      </span>
                     </motion.div>
+
                     <motion.div
                       drag
-                      dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+                      dragSnapToOrigin={true}
+                      onClick={() => handleTestFabric('synthetic')}
                       onDragEnd={(e, info) => handleDragEnd('synthetic', info)}
-                      className="cursor-grab active:cursor-grabbing bg-white p-4 rounded-lg shadow-md border-2 border-lab-wood"
+                      className="cursor-pointer bg-white p-4 rounded-2xl shadow-medium border-2 border-factory-orange hover:border-factory-orange-dark flex flex-col items-center gap-2"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                     >
-                      🎽 Synthetic
+                      <span className="text-4xl">🎽</span>
+                      <span className="font-bold text-sm">Synthetic Shirt</span>
+                      <span className="text-[11px] font-extrabold text-white bg-factory-orange px-3 py-1 rounded-full shadow-xs">
+                        🔥 Test Synthetic in Flame
+                      </span>
                     </motion.div>
                   </div>
 
-                  <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-48 h-48 drop-zone flex flex-col items-center justify-center border-4 border-fire-red/30 bg-fire-red-light/10 rounded-full">
+                  <div className="mt-4 w-44 h-44 drop-zone flex flex-col items-center justify-center border-4 border-dashed border-fire-red/40 bg-fire-red-light/10 rounded-full shadow-inner">
                     <Flame className="w-16 h-16 text-fire-red animate-pulse" />
-                    <span className="font-bold text-fire-red mt-2">Flame Zone</span>
+                    <span className="font-bold text-sm text-fire-red mt-1">Flame Test Zone</span>
                   </div>
                 </div>
               )}
