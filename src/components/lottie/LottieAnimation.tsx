@@ -14,7 +14,11 @@ import {
   nylonRopeAnimation,
   polyesterJacketAnimation,
   plasticBottleAnimation,
-  rubberTreeAnimation
+  rubberTreeAnimation,
+  boilingKettleAnimation,
+  tensileMachineAnimation,
+  biodegradationAnimation,
+  adhesiveBondAnimation
 } from "./animations";
 
 export type LottiePreset =
@@ -29,7 +33,11 @@ export type LottiePreset =
   | "rope"
   | "jacket"
   | "bottle"
-  | "rubber_tree";
+  | "rubber_tree"
+  | "boiling_kettle"
+  | "tensile_machine"
+  | "biodegradation"
+  | "adhesive_bond";
 
 interface LottieAnimationProps {
   preset?: LottiePreset;
@@ -54,6 +62,10 @@ const PRESET_MAP: Record<LottiePreset, any> = {
   jacket: polyesterJacketAnimation,
   bottle: plasticBottleAnimation,
   rubber_tree: rubberTreeAnimation,
+  boiling_kettle: boilingKettleAnimation,
+  tensile_machine: tensileMachineAnimation,
+  biodegradation: biodegradationAnimation,
+  adhesive_bond: adhesiveBondAnimation,
 };
 
 export function LottieAnimation({

@@ -293,6 +293,10 @@ export default function ExperimentsMission() {
                   </span>
                 </div>
 
+                <div className="mb-4">
+                  <LottieAnimation preset="tensile_machine" width={110} height={110} />
+                </div>
+
                 <div className="flex justify-around items-start w-full min-h-[320px] max-w-lg mb-6">
                   {/* Steel */}
                   <div className="flex flex-col items-center">

@@ -4,10 +4,10 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, ArrowLeft, Wrench, StretchHorizontal, PlusCircle, CheckCircle2, RotateCcw, Lock } from 'lucide-react';
 import { KidTermTooltip } from '@/components/learning/KidTermTooltip';
 import { SentenceVoiceReader } from '@/components/learning/SentenceVoiceReader';
 import { ParentPinGateModal } from '@/components/learning/ParentPinGateModal';
+import { LottieAnimation } from '@/components/lottie/LottieAnimation';
 import { logChildAttempt } from '@/lib/learning-engine';
 import { playDiscoverySound, playPopSound, playClickSound, speak } from '@/lib/audio-manager';
 
@@ -152,7 +152,8 @@ export default function ExtrasMission() {
           {/* TAB 1: SYNTHETIC RUBBER */}
           {activeTab === 'rubber' && (
             <div className="space-y-6 text-center">
-              <div className="speech-bubble mx-auto max-w-xl">
+              <div className="speech-bubble mx-auto max-w-xl flex flex-col items-center">
+                <LottieAnimation preset="rubber_tree" width={80} height={80} className="mb-1" />
                 <p className="text-base text-text-dark font-semibold">
                   Pip says: &ldquo;Synthetic rubber is an elastic <KidTermTooltip term="polymer" displayText="polymer" /> made in chemical plants. Drag or tap each object to test its stretchiness!&rdquo;
                 </p>
@@ -215,7 +216,8 @@ export default function ExtrasMission() {
           {/* TAB 2: SYNTHETIC ADHESIVES REPAIR GAME */}
           {activeTab === 'glue' && (
             <div className="space-y-6 text-center">
-              <div className="speech-bubble mx-auto max-w-xl">
+              <div className="speech-bubble mx-auto max-w-xl flex flex-col items-center">
+                <LottieAnimation preset="adhesive_bond" width={110} height={110} className="mb-1" />
                 <p className="text-base text-text-dark font-semibold">
                   Pip says: &ldquo;Objects are broken! Tap each item with synthetic adhesive glue to bond the molecules together!&rdquo;
                 </p>

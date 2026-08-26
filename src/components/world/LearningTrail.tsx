@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { ChevronDown, ChevronUp, Users, BookOpen, Compass, ArrowLeft } from "lucide-react";
-import { playClickSound, getVoicePersona, setVoicePersona, speak } from "@/lib/audio-manager";
+import { playClickSound, stopSpeaking } from "@/lib/audio-manager";
 
 const TRAIL_NODES = [
   { id: "origins", icon: "🌱", label: "Origins", route: "/play/origins" },
@@ -27,6 +27,10 @@ export function LearningTrail({
 }) {
   const pathname = usePathname();
   const [isExpanded, setIsExpanded] = useState(false);
+
+  useEffect(() => {
+    stopSpeaking();
+  }, [pathname]);
 
   // Find current mission index
   const currentIndex = TRAIL_NODES.findIndex((n) => pathname.startsWith(n.route));

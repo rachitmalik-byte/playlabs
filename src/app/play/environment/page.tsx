@@ -4,10 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, ArrowLeft, RotateCcw, Sparkles, CheckCircle2, Lock, Lightbulb } from 'lucide-react';
 import { KidTermTooltip } from '@/components/learning/KidTermTooltip';
 import { SentenceVoiceReader } from '@/components/learning/SentenceVoiceReader';
 import { ParentPinGateModal } from '@/components/learning/ParentPinGateModal';
+import { LottieAnimation } from '@/components/lottie/LottieAnimation';
 import { logChildAttempt } from '@/lib/learning-engine';
 import { playDiscoverySound, playPopSound, playClickSound, speak } from '@/lib/audio-manager';
 
@@ -107,8 +107,9 @@ export default function EnvironmentMission() {
         </header>
 
         <main className="flex-1 flex flex-col items-center">
-          {/* Pip Dialogue */}
-          <div className="speech-bubble bg-white p-5 rounded-2xl shadow-soft border-2 border-lab-wood/30 mb-6 w-full text-center">
+          {/* Pip Dialogue & Lottie Soil Timeline */}
+          <div className="speech-bubble bg-white p-5 rounded-2xl shadow-soft border-2 border-lab-wood/30 mb-4 w-full text-center flex flex-col items-center">
+            <LottieAnimation preset="biodegradation" width={110} height={110} className="mb-2" />
             <p className="text-base sm:text-lg font-extrabold text-text-dark">
               {is100Years 
                 ? "😱 The plastic bottle is STILL THERE after 100 years! Bacteria cannot digest synthetic polymers." 

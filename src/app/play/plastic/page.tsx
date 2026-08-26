@@ -327,30 +327,34 @@ export default function PlasticMission() {
                 </p>
               </div>
 
-              {/* Boiling Kettle Simulator */}
-              <div className="bg-lab-chalk/60 rounded-3xl border-2 border-lab-wood/25 p-6 flex flex-col sm:flex-row items-center justify-around gap-6 min-h-[180px]">
+              {/* Boiling Kettle Lottie Simulator */}
+              <div className="bg-slate-900 rounded-3xl border-4 border-slate-700 p-6 flex flex-col sm:flex-row items-center justify-around gap-6 text-white shadow-inner">
                 <div className="flex flex-col items-center text-center">
-                  <span className="text-6xl animate-bounce">🫖</span>
-                  <span className="text-xs font-black text-fire-red mt-1">Water Boiling (100°C) 🔥</span>
+                  <LottieAnimation preset="boiling_kettle" width={150} height={150} />
+                  <div className="flex items-center gap-1.5 mt-1 bg-rose-500/20 text-rose-400 border border-rose-500/30 px-3 py-1 rounded-full text-xs font-mono font-bold">
+                    <span>🔥 Water Boiling: 100°C</span>
+                  </div>
                 </div>
 
-                <div className="p-4 bg-white rounded-2xl border-2 border-lab-wood/30 shadow-xs text-center min-w-[200px]">
-                  <span className="text-xs text-text-muted font-bold block mb-1">Handle Material:</span>
-                  <span className="font-black text-base text-text-dark capitalize block">
-                    {handleMaterial ? handleMaterial : "None Chosen"}
+                <div className="p-5 bg-white/10 rounded-2xl border border-white/20 text-center min-w-[220px]">
+                  <span className="text-xs text-slate-300 font-bold block mb-1">Handle Material:</span>
+                  <span className="font-black text-base text-amber-400 capitalize block">
+                    {handleMaterial ? (handleMaterial === 'metal' ? '🔩 Metal Handle' : handleMaterial === 'plastic' ? '🧴 Bakelite Plastic' : '🪵 Wood') : "None Chosen"}
                   </span>
 
                   {heatStatus === 'testing' && (
-                    <span className="text-xs text-factory-orange font-bold animate-pulse mt-2 block">
-                      Heating element testing... ⏳
+                    <span className="text-xs text-amber-300 font-bold animate-pulse mt-2 block">
+                      ⚡ Heat conducting through handle...
                     </span>
                   )}
 
                   {heatStatus === 'result' && (
-                    <span className={`text-xs font-black mt-2 block ${
-                      handleMaterial === 'metal' ? 'text-fire-red' : 'text-nature-green-dark'
+                    <span className={`text-xs font-black mt-2 block p-2 rounded-xl border ${
+                      handleMaterial === 'metal' 
+                        ? 'bg-rose-500/20 border-rose-500 text-rose-300 animate-pulse' 
+                        : 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
                     }`}>
-                      {handleMaterial === 'metal' ? '✋🔥 Burning Hot! (Conductor)' : '✋✅ Cool & Safe! (Heat Insulator)'}
+                      {handleMaterial === 'metal' ? '✋🔥 Burning Hot! Metal Conducts Heat!' : '✋✅ Cool to Touch! Plastic is a Heat Insulator!'}
                     </span>
                   )}
                 </div>

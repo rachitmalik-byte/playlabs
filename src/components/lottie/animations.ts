@@ -276,16 +276,13 @@ export const woolSheepAnimation = {
         s: { k: [100, 100, 100] }
       },
       shapes: [
-        // Fluffy cloud body
         { ty: "el", p: { k: [0, 0] }, s: { k: [55, 45] } },
         { ty: "el", p: { k: [-18, -10] }, s: { k: [30, 30] } },
         { ty: "el", p: { k: [18, -10] }, s: { k: [30, 30] } },
         { ty: "fl", c: { k: [0.95, 0.95, 0.98, 1] } },
         { ty: "st", c: { k: [0.75, 0.8, 0.85, 1] }, w: { k: 3 } },
-        // Cute face
         { ty: "el", p: { k: [25, 2] }, s: { k: [20, 18] } },
         { ty: "fl", c: { k: [0.95, 0.8, 0.75, 1] } },
-        // Eye
         { ty: "el", p: { k: [28, 0] }, s: { k: [4, 4] } },
         { ty: "fl", c: { k: [0.1, 0.1, 0.1, 1] } }
       ]
@@ -373,10 +370,8 @@ export const nylonRopeAnimation = {
         s: { k: [100, 100, 100] }
       },
       shapes: [
-        // Blue coiled climbing rope
         { ty: "el", p: { k: [0, -10] }, s: { k: [44, 44] } },
         { ty: "st", c: { k: [0.15, 0.5, 0.95, 1] }, w: { k: 8 } },
-        // Carabiner clip
         { ty: "rc", p: { k: [0, 22] }, s: { k: [20, 28] }, r: { k: 8 } },
         { ty: "st", c: { k: [0.95, 0.4, 0.1, 1] }, w: { k: 5 } }
       ]
@@ -462,10 +457,8 @@ export const plasticBottleAnimation = {
         s: { k: [100, 100, 100] }
       },
       shapes: [
-        // Cap
         { ty: "rc", p: { k: [0, -32] }, s: { k: [14, 10] }, r: { k: 2 } },
         { ty: "fl", c: { k: [0.15, 0.5, 0.95, 1] } },
-        // Body
         { ty: "rc", p: { k: [0, 4] }, s: { k: [32, 54] }, r: { k: 8 } },
         { ty: "fl", c: { k: [0.75, 0.9, 1.0, 0.8] } },
         { ty: "st", c: { k: [0.4, 0.7, 0.95, 1] }, w: { k: 3 } }
@@ -518,13 +511,10 @@ export const rubberTreeAnimation = {
         s: { k: [100, 100, 100] }
       },
       shapes: [
-        // Canopy
         { ty: "el", p: { k: [0, -28] }, s: { k: [50, 36] } },
         { ty: "fl", c: { k: [0.2, 0.7, 0.3, 1] } },
-        // Trunk
         { ty: "rc", p: { k: [0, 14] }, s: { k: [16, 50] }, r: { k: 3 } },
         { ty: "fl", c: { k: [0.55, 0.35, 0.2, 1] } },
-        // Cup
         { ty: "el", p: { k: [8, 20] }, s: { k: [12, 10] } },
         { ty: "fl", c: { k: [0.3, 0.3, 0.35, 1] } }
       ]
@@ -635,6 +625,325 @@ export const waterDropletsAnimation = {
       shapes: [
         { ty: "el", p: { k: [0, 0] }, s: { k: [32, 16] } },
         { ty: "st", c: { k: [0.3, 0.7, 1.0, 1] }, w: { k: 3 } }
+      ]
+    }
+  ]
+};
+
+// 13. Boiling Water Kettle & Steam Simulator (Transparent)
+export const boilingKettleAnimation = {
+  v: "5.7.4",
+  fr: 30,
+  ip: 0,
+  op: 40,
+  w: 160,
+  h: 160,
+  nm: "Boiling Kettle",
+  ddd: 0,
+  assets: [],
+  layers: [
+    // Rising Steam Cloud 1
+    {
+      ddd: 0,
+      ind: 1,
+      ty: 4,
+      nm: "Steam 1",
+      sr: 1,
+      ks: {
+        o: { k: [{ t: 0, s: [0], e: [80] }, { t: 20, s: [80], e: [0] }, { t: 40, s: [0] }] },
+        r: { k: [{ t: 0, s: [-10], e: [15] }, { t: 40, s: [15] }] },
+        p: { k: [{ t: 0, s: [115, 45, 0], e: [130, 15, 0] }, { t: 40, s: [130, 15, 0] }] },
+        a: { k: [0, 0, 0] },
+        s: { k: [{ t: 0, s: [50, 50, 100], e: [130, 130, 100] }, { t: 40, s: [130, 130, 100] }] }
+      },
+      shapes: [
+        { ty: "el", p: { k: [0, 0] }, s: { k: [22, 22] } },
+        { ty: "fl", c: { k: [0.85, 0.92, 1.0, 0.8] } }
+      ]
+    },
+    // Rising Steam Cloud 2
+    {
+      ddd: 0,
+      ind: 2,
+      ty: 4,
+      nm: "Steam 2",
+      sr: 1,
+      ks: {
+        o: { k: [{ t: 10, s: [0], e: [80] }, { t: 30, s: [80], e: [0] }, { t: 40, s: [0] }] },
+        r: { k: [{ t: 10, s: [10], e: [-15] }, { t: 40, s: [-15] }] },
+        p: { k: [{ t: 10, s: [110, 48, 0], e: [120, 20, 0] }, { t: 40, s: [120, 20, 0] }] },
+        a: { k: [0, 0, 0] },
+        s: { k: [{ t: 10, s: [40, 40, 100], e: [110, 110, 100] }, { t: 40, s: [110, 110, 100] }] }
+      },
+      shapes: [
+        { ty: "el", p: { k: [0, 0] }, s: { k: [18, 18] } },
+        { ty: "fl", c: { k: [0.85, 0.92, 1.0, 0.7] } }
+      ]
+    },
+    // Kettle Metallic Body
+    {
+      ddd: 0,
+      ind: 3,
+      ty: 4,
+      nm: "Kettle Body",
+      sr: 1,
+      ks: {
+        o: { k: 100 },
+        r: { k: 0 },
+        p: { k: [80, 95, 0] },
+        a: { k: [0, 0, 0] },
+        s: { k: [100, 100, 100] }
+      },
+      shapes: [
+        // Pot belly
+        { ty: "el", p: { k: [0, 5] }, s: { k: [70, 60] } },
+        { ty: "fl", c: { k: [0.88, 0.9, 0.95, 1] } },
+        { ty: "st", c: { k: [0.45, 0.5, 0.6, 1] }, w: { k: 4 } },
+        // Spout
+        { ty: "rc", p: { k: [36, -16] }, s: { k: [18, 12] }, r: { k: 4 } },
+        { ty: "fl", c: { k: [0.75, 0.8, 0.88, 1] } },
+        // Lid knob
+        { ty: "el", p: { k: [0, -28] }, s: { k: [12, 12] } },
+        { ty: "fl", c: { k: [0.2, 0.2, 0.25, 1] } }
+      ]
+    },
+    // Heat Glow Coil at Bottom
+    {
+      ddd: 0,
+      ind: 4,
+      ty: 4,
+      nm: "Heat Coil",
+      sr: 1,
+      ks: {
+        o: { k: [{ t: 0, s: [60], e: [100] }, { t: 20, s: [100], e: [60] }, { t: 40, s: [60] }] },
+        r: { k: 0 },
+        p: { k: [80, 132, 0] },
+        a: { k: [0, 0, 0] },
+        s: { k: [100, 100, 100] }
+      },
+      shapes: [
+        { ty: "rc", p: { k: [0, 0] }, s: { k: [74, 10] }, r: { k: 5 } },
+        { ty: "fl", c: { k: [1.0, 0.3, 0.1, 1] } }
+      ]
+    }
+  ]
+};
+
+// 14. Tensile Machine Pulling Rig (Transparent)
+export const tensileMachineAnimation = {
+  v: "5.7.4",
+  fr: 30,
+  ip: 0,
+  op: 40,
+  w: 160,
+  h: 160,
+  nm: "Tensile Machine",
+  ddd: 0,
+  assets: [],
+  layers: [
+    // Pulled Cord with Dynamic Elastic Vibration
+    {
+      ddd: 0,
+      ind: 1,
+      ty: 4,
+      nm: "Stretched Cord",
+      sr: 1,
+      ks: {
+        o: { k: 100 },
+        r: { k: 0 },
+        p: { k: [80, 70, 0] },
+        a: { k: [0, 0, 0] },
+        s: { k: [{ t: 0, s: [100, 100, 100], e: [85, 115, 100] }, { t: 20, s: [85, 115, 100], e: [100, 100, 100] }, { t: 40, s: [100, 100, 100] }] }
+      },
+      shapes: [
+        { ty: "rc", p: { k: [0, 0] }, s: { k: [8, 65] }, r: { k: 3 } },
+        { ty: "fl", c: { k: [0.15, 0.55, 0.95, 1] } }
+      ]
+    },
+    // Top Clamp
+    {
+      ddd: 0,
+      ind: 2,
+      ty: 4,
+      nm: "Top Clamp",
+      sr: 1,
+      ks: {
+        o: { k: 100 },
+        r: { k: 0 },
+        p: { k: [80, 32, 0] },
+        a: { k: [0, 0, 0] },
+        s: { k: [100, 100, 100] }
+      },
+      shapes: [
+        { ty: "rc", p: { k: [0, 0] }, s: { k: [50, 16] }, r: { k: 4 } },
+        { ty: "fl", c: { k: [0.3, 0.35, 0.45, 1] } }
+      ]
+    },
+    // Heavy Weight Block at Bottom (Bouncing under load)
+    {
+      ddd: 0,
+      ind: 3,
+      ty: 4,
+      nm: "Weight Block",
+      sr: 1,
+      ks: {
+        o: { k: 100 },
+        r: { k: 0 },
+        p: { k: [{ t: 0, s: [80, 118, 0], e: [80, 124, 0] }, { t: 20, s: [80, 124, 0], e: [80, 118, 0] }, { t: 40, s: [80, 118, 0] }] },
+        a: { k: [0, 0, 0] },
+        s: { k: [100, 100, 100] }
+      },
+      shapes: [
+        { ty: "rc", p: { k: [0, 0] }, s: { k: [56, 30] }, r: { k: 6 } },
+        { ty: "fl", c: { k: [0.95, 0.5, 0.15, 1] } },
+        { ty: "st", c: { k: [0.8, 0.35, 0.1, 1] }, w: { k: 3 } }
+      ]
+    }
+  ]
+};
+
+// 15. Soil Decomposition & 100-Year Timeline (Transparent)
+export const biodegradationAnimation = {
+  v: "5.7.4",
+  fr: 30,
+  ip: 0,
+  op: 50,
+  w: 160,
+  h: 160,
+  nm: "Biodegradation",
+  ddd: 0,
+  assets: [],
+  layers: [
+    // Shiny Intact Plastic Bottle (Doesn't decompose)
+    {
+      ddd: 0,
+      ind: 1,
+      ty: 4,
+      nm: "Intact Bottle",
+      sr: 1,
+      ks: {
+        o: { k: 100 },
+        r: { k: 0 },
+        p: { k: [110, 80, 0] },
+        a: { k: [0, 0, 0] },
+        s: { k: [100, 100, 100] }
+      },
+      shapes: [
+        { ty: "rc", p: { k: [0, 0] }, s: { k: [26, 50] }, r: { k: 6 } },
+        { ty: "fl", c: { k: [0.2, 0.7, 1.0, 0.85] } },
+        { ty: "st", c: { k: [0.1, 0.45, 0.85, 1] }, w: { k: 3 } }
+      ]
+    },
+    // Decomposing Organic Matter (Fades into rich compost soil)
+    {
+      ddd: 0,
+      ind: 2,
+      ty: 4,
+      nm: "Composting Apple",
+      sr: 1,
+      ks: {
+        o: { k: [{ t: 0, s: [100], e: [15] }, { t: 40, s: [15], e: [100] }, { t: 50, s: [100] }] },
+        r: { k: 0 },
+        p: { k: [50, 80, 0] },
+        a: { k: [0, 0, 0] },
+        s: { k: [{ t: 0, s: [100, 100, 100], e: [35, 35, 100] }, { t: 40, s: [35, 35, 100], e: [100, 100, 100] }, { t: 50, s: [100, 100, 100] }] }
+      },
+      shapes: [
+        { ty: "el", p: { k: [0, 0] }, s: { k: [34, 34] } },
+        { ty: "fl", c: { k: [0.85, 0.25, 0.2, 1] } }
+      ]
+    },
+    // Underground Soil Layers
+    {
+      ddd: 0,
+      ind: 3,
+      ty: 4,
+      nm: "Soil Bed",
+      sr: 1,
+      ks: {
+        o: { k: 90 },
+        r: { k: 0 },
+        p: { k: [80, 125, 0] },
+        a: { k: [0, 0, 0] },
+        s: { k: [100, 100, 100] }
+      },
+      shapes: [
+        { ty: "rc", p: { k: [0, 0] }, s: { k: [140, 30] }, r: { k: 6 } },
+        { ty: "fl", c: { k: [0.45, 0.3, 0.18, 1] } }
+      ]
+    }
+  ]
+};
+
+// 16. Synthetic Adhesive Chemical Bonding (Transparent)
+export const adhesiveBondAnimation = {
+  v: "5.7.4",
+  fr: 30,
+  ip: 0,
+  op: 40,
+  w: 160,
+  h: 160,
+  nm: "Adhesive Bonding",
+  ddd: 0,
+  assets: [],
+  layers: [
+    // Glue Drop Falling
+    {
+      ddd: 0,
+      ind: 1,
+      ty: 4,
+      nm: "Glue Drop",
+      sr: 1,
+      ks: {
+        o: { k: [{ t: 0, s: [0], e: [100] }, { t: 15, s: [100] }, { t: 25, s: [100], e: [0] }, { t: 40, s: [0] }] },
+        r: { k: 0 },
+        p: { k: [{ t: 0, s: [80, 30, 0], e: [80, 80, 0] }, { t: 40, s: [80, 80, 0] }] },
+        a: { k: [0, 0, 0] },
+        s: { k: [100, 100, 100] }
+      },
+      shapes: [
+        { ty: "el", p: { k: [0, 0] }, s: { k: [12, 16] } },
+        { ty: "fl", c: { k: [0.95, 0.85, 0.2, 1] } }
+      ]
+    },
+    // Joined Bond Energy Flash
+    {
+      ddd: 0,
+      ind: 2,
+      ty: 4,
+      nm: "Bond Glow",
+      sr: 1,
+      ks: {
+        o: { k: [{ t: 20, s: [0], e: [100] }, { t: 32, s: [100], e: [30] }, { t: 40, s: [30] }] },
+        r: { k: 0 },
+        p: { k: [80, 85, 0] },
+        a: { k: [0, 0, 0] },
+        s: { k: [{ t: 20, s: [20, 20, 100], e: [120, 120, 100] }, { t: 40, s: [120, 120, 100] }] }
+      },
+      shapes: [
+        { ty: "rc", p: { k: [0, 0] }, s: { k: [60, 14] }, r: { k: 4 } },
+        { ty: "fl", c: { k: [0.2, 0.8, 0.4, 0.8] } }
+      ]
+    },
+    // Left & Right Broken Pieces Coming Together
+    {
+      ddd: 0,
+      ind: 3,
+      ty: 4,
+      nm: "Joined Pieces",
+      sr: 1,
+      ks: {
+        o: { k: 100 },
+        r: { k: 0 },
+        p: { k: [80, 85, 0] },
+        a: { k: [0, 0, 0] },
+        s: { k: [100, 100, 100] }
+      },
+      shapes: [
+        { ty: "rc", p: { k: [-26, 0] }, s: { k: [40, 36] }, r: { k: 6 } },
+        { ty: "fl", c: { k: [0.35, 0.45, 0.6, 1] } },
+        { ty: "rc", p: { k: [26, 0] }, s: { k: [40, 36] }, r: { k: 6 } },
+        { ty: "fl", c: { k: [0.35, 0.45, 0.6, 1] } }
       ]
     }
   ]

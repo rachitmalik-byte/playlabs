@@ -2,9 +2,11 @@
 
 /**
  * PolyQuest Audio Engine
- * 1. Background Music: Joyful, playful, gentle melodic synth for children
- * 2. Text-To-Speech (TTS): Natural, expressive voice using Web Speech API with smart voice picker
- * 3. Sound Effects: Tactile, pleasant physics and discovery audio
+ * 1. Background Music: Joyful, playful synthesizer for children
+ * 2. Text-To-Speech (TTS): Exclusive, high-definition Neural Kid Voice (en-US-AnaNeural).
+ *    Zero overlapping voices, zero adult fallback overlap.
+ * 3. Karaoke Word Highlighting: Synchronized word tracking as Pip speaks.
+ * 4. Sound Effects: Tactile physics and discovery audio.
  */
 
 // ============================================================
@@ -205,29 +207,14 @@ export function setMusicVolume(targetVol: number) {
 }
 
 // ============================================================
-// 2. NATURAL PIP TEXT-TO-SPEECH (TTS) ENGINE
+// 2. EXCLUSIVE NATURAL PIP VOICE ENGINE (Single Flight Only)
 // ============================================================
 
 let isTtsEnabled = true;
 let isSpeakingNow = false;
 let lastSpokenText = "";
-let currentNeuralAudio: HTMLAudioElement | null = null;
-let currentVoicePersona: "child" | "educator" | "adventurer" = "child";
-
-export function setVoicePersona(persona: "child" | "educator" | "adventurer") {
-  currentVoicePersona = persona;
-  if (typeof window !== "undefined") {
-    localStorage.setItem("polyquest-voice-persona", persona);
-  }
-}
-
-export function getVoicePersona(): "child" | "educator" | "adventurer" {
-  if (typeof window !== "undefined") {
-    const saved = localStorage.getItem("polyquest-voice-persona");
-    if (saved === "child" || saved === "educator" || saved === "adventurer") return saved;
-  }
-  return "child";
-}
+let currentAudio: HTMLAudioElement | null = null;
+let wordHighlightTimer: ReturnType<typeof setInterval> | null = null;
 
 export function setVoiceEnabled(enabled: boolean) {
   isTtsEnabled = enabled;
@@ -248,100 +235,46 @@ export function getIsVoiceEnabled(): boolean {
   return true;
 }
 
-/** Get best natural sounding voice available in client browser as fallback */
-export function getBestNaturalVoice(): SpeechSynthesisVoice | null {
-  if (typeof window === "undefined" || !("speechSynthesis" in window)) return null;
-
-  const voices = window.speechSynthesis.getVoices();
-  if (!voices || voices.length === 0) return null;
-
-  // 1. Look for modern natural neural voices
-  const naturalNeural = voices.find((v) => 
-    v.lang.startsWith("en") && 
-    (v.name.includes("Natural") || v.name.includes("Neural") || v.name.includes("Online"))
-  );
-  if (naturalNeural) return naturalNeural;
-
-  // 2. High-grade platform voices
-  const premiumNamed = voices.find((v) => 
-    v.lang.startsWith("en") && 
-    (v.name.includes("Jenny") || 
-     v.name.includes("Aria") || 
-     v.name.includes("Samantha") || 
-     v.name.includes("Google US English") || 
-     v.name.includes("Google UK English Female") || 
-     v.name.includes("Microsoft Zira") || 
-     v.name.includes("Victoria") || 
-     v.name.includes("Karen") || 
-     v.name.includes("Moira"))
-  );
-  if (premiumNamed) return premiumNamed;
-
-  const englishFemale = voices.find((v) => 
-    v.lang.startsWith("en") && v.name.toLowerCase().includes("female")
-  );
-  if (englishFemale) return englishFemale;
-
-  const anyEnglish = voices.find((v) => v.lang.startsWith("en"));
-  if (anyEnglish) return anyEnglish;
-
-  return voices[0] || null;
-}
-
-/** Fallback to local browser speech synthesis only if neural audio fails */
-function speakBrowserFallback(cleanText: string, callbacks?: { onStart?: () => void; onEnd?: () => void }) {
-  if (typeof window === "undefined" || !("speechSynthesis" in window)) {
-    callbacks?.onEnd?.();
-    return;
+export function stopSpeaking() {
+  if (wordHighlightTimer) {
+    clearInterval(wordHighlightTimer);
+    wordHighlightTimer = null;
   }
 
-  try {
-    window.speechSynthesis.cancel();
+  if (currentAudio) {
+    try {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+      currentAudio.src = "";
+    } catch {}
+    currentAudio = null;
+  }
 
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-    const naturalVoice = getBestNaturalVoice();
+  // Cancel any browser speech synthesis as a failsafe
+  if (typeof window !== "undefined" && "speechSynthesis" in window) {
+    try {
+      window.speechSynthesis.cancel();
+    } catch {}
+  }
 
-    if (naturalVoice) {
-      utterance.voice = naturalVoice;
-    }
-    utterance.lang = "en-US";
-    utterance.rate = 0.94;
-    utterance.pitch = 1.05;
-    utterance.volume = 1.0;
+  isSpeakingNow = false;
+  setMusicVolume(0.35);
 
-    utterance.onstart = () => {
-      isSpeakingNow = true;
-      setMusicVolume(0.12);
-      callbacks?.onStart?.();
-      window.dispatchEvent(new CustomEvent("polyquest-pip-speaking", { detail: { speaking: true } }));
-    };
-
-    utterance.onend = () => {
-      isSpeakingNow = false;
-      setMusicVolume(0.35);
-      callbacks?.onEnd?.();
-      window.dispatchEvent(new CustomEvent("polyquest-pip-speaking", { detail: { speaking: false } }));
-    };
-
-    utterance.onerror = () => {
-      isSpeakingNow = false;
-      setMusicVolume(0.35);
-      callbacks?.onEnd?.();
-      window.dispatchEvent(new CustomEvent("polyquest-pip-speaking", { detail: { speaking: false } }));
-    };
-
-    window.speechSynthesis.speak(utterance);
-  } catch {
-    callbacks?.onEnd?.();
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("polyquest-pip-speaking", { detail: { speaking: false, wordIndex: -1 } }));
   }
 }
 
-/** Speak Pip's dialogue exclusively with Natural Neural Audio */
+/**
+ * Speak Pip's dialogue exclusively using the Neural Kid Voice.
+ * Zero overlap guaranteed. Automatically estimates word timings for karaoke highlighting.
+ */
 export function speak(
   text: string,
   callbacks?: {
     onStart?: () => void;
     onEnd?: () => void;
+    onWordHighlight?: (wordIndex: number) => void;
   }
 ) {
   if (!getIsVoiceEnabled() || typeof window === "undefined") {
@@ -352,7 +285,7 @@ export function speak(
   // Clean text from emojis, markdown, and arrows
   const cleanText = text
     .replace(/[\u{1F300}-\u{1F9FF}]/gu, "")
-    .replace(/[*_#`~➔→]/g, "")
+    .replace(/[*_#`~➔→✓✗⚠️]/gu, "")
     .replace(/\s+/g, " ")
     .trim();
 
@@ -362,43 +295,62 @@ export function speak(
   }
 
   lastSpokenText = text;
-  
-  // Stop any currently playing audio or speech synthesis immediately
+
+  // 1. Strictly stop any previous audio or synthesis
   stopSpeaking();
 
   try {
-    const persona = getVoicePersona();
-    const ttsUrl = `/api/tts?text=${encodeURIComponent(cleanText)}&voice=${persona}`;
-
+    const ttsUrl = `/api/tts?text=${encodeURIComponent(cleanText)}&voice=child`;
     const audio = new Audio(ttsUrl);
-    currentNeuralAudio = audio;
+    currentAudio = audio;
+
+    const words = cleanText.split(" ");
+    let currentWordIdx = 0;
 
     audio.onplay = () => {
       isSpeakingNow = true;
       setMusicVolume(0.12);
       callbacks?.onStart?.();
-      window.dispatchEvent(new CustomEvent("polyquest-pip-speaking", { detail: { speaking: true } }));
+      window.dispatchEvent(new CustomEvent("polyquest-pip-speaking", { detail: { speaking: true, wordIndex: 0 } }));
+
+      // Synchronize Karaoke word highlighting
+      if (words.length > 0) {
+        callbacks?.onWordHighlight?.(0);
+        const estimatedDurationMs = Math.max(1200, words.length * 280);
+        const perWordMs = estimatedDurationMs / words.length;
+
+        if (wordHighlightTimer) clearInterval(wordHighlightTimer);
+        wordHighlightTimer = setInterval(() => {
+          currentWordIdx++;
+          if (currentWordIdx < words.length) {
+            callbacks?.onWordHighlight?.(currentWordIdx);
+            window.dispatchEvent(new CustomEvent("polyquest-pip-speaking", { detail: { speaking: true, wordIndex: currentWordIdx } }));
+          } else {
+            if (wordHighlightTimer) clearInterval(wordHighlightTimer);
+          }
+        }, perWordMs);
+      }
     };
 
     audio.onended = () => {
-      isSpeakingNow = false;
-      setMusicVolume(0.35);
-      currentNeuralAudio = null;
+      stopSpeaking();
       callbacks?.onEnd?.();
-      window.dispatchEvent(new CustomEvent("polyquest-pip-speaking", { detail: { speaking: false } }));
     };
 
     audio.onerror = () => {
-      currentNeuralAudio = null;
-      speakBrowserFallback(cleanText, callbacks);
+      stopSpeaking();
+      callbacks?.onEnd?.();
     };
 
     audio.play().catch(() => {
-      speakBrowserFallback(cleanText, callbacks);
+      // If autoplay was blocked by browser, simply reset state without invoking any robot voice
+      stopSpeaking();
+      callbacks?.onEnd?.();
     });
 
   } catch {
-    speakBrowserFallback(cleanText, callbacks);
+    stopSpeaking();
+    callbacks?.onEnd?.();
   }
 }
 
@@ -408,24 +360,15 @@ export function replayLastSpeech() {
   }
 }
 
-export function stopSpeaking() {
-  if (currentNeuralAudio) {
-    currentNeuralAudio.pause();
-    currentNeuralAudio.currentTime = 0;
-    currentNeuralAudio = null;
-  }
-  if (typeof window !== "undefined" && "speechSynthesis" in window) {
-    window.speechSynthesis.cancel();
-  }
-  isSpeakingNow = false;
-  setMusicVolume(0.35);
-  if (typeof window !== "undefined") {
-    window.dispatchEvent(new CustomEvent("polyquest-pip-speaking", { detail: { speaking: false } }));
-  }
-}
-
 export function isPipSpeaking(): boolean {
   return isSpeakingNow;
+}
+
+// Stop speech on page navigation / unmount automatically
+if (typeof window !== "undefined") {
+  window.addEventListener("beforeunload", () => stopSpeaking());
+  window.addEventListener("pagehide", () => stopSpeaking());
+  window.addEventListener("popstate", () => stopSpeaking());
 }
 
 // ============================================================
@@ -454,9 +397,9 @@ export function playSuccessSound() {
   const ctx = getOrCreateAudioContext();
   if (!ctx || !sfxGain) return;
   const now = ctx.currentTime;
-  // Triumph fanfare
-  [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((freq, idx) => {
-    playPluckNote(ctx, sfxGain!, freq, now + idx * 0.07, 0.45, 0.25);
+  // Celebratory chord fanfare
+  [440, 554.37, 659.25, 880].forEach((freq, idx) => {
+    playPluckNote(ctx, sfxGain!, freq, now + idx * 0.06, 0.45, 0.2);
   });
 }
 
@@ -464,52 +407,32 @@ export function playWarningSound() {
   const ctx = getOrCreateAudioContext();
   if (!ctx || !sfxGain) return;
   const now = ctx.currentTime;
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.type = "sawtooth";
-  osc.frequency.setValueAtTime(320, now);
-  osc.frequency.linearRampToValueAtTime(220, now + 0.3);
-  gain.gain.setValueAtTime(0.12, now);
-  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-  osc.connect(gain);
-  gain.connect(sfxGain);
-  osc.start(now);
-  osc.stop(now + 0.3);
+  playPluckNote(ctx, sfxGain, 320, now, 0.2, 0.18);
+  playPluckNote(ctx, sfxGain, 240, now + 0.12, 0.3, 0.18);
 }
 
 export function playClickSound() {
   const ctx = getOrCreateAudioContext();
   if (!ctx || !sfxGain) return;
   const now = ctx.currentTime;
-  playPluckNote(ctx, sfxGain, 900, now, 0.06, 0.12);
+  playPluckNote(ctx, sfxGain, 880, now, 0.06, 0.12);
 }
 
-// User-gesture audio unlocker: unlocks AudioContext and starts background music on first tap anywhere
 export function setupGlobalAudioUnlock() {
   if (typeof window === "undefined") return;
-
   const unlock = () => {
-    const ctx = getOrCreateAudioContext();
-    if (ctx && ctx.state === "suspended") {
-      ctx.resume().catch(() => {});
-    }
-    // If music is set to enabled (or default first visit), start it!
-    const saved = localStorage.getItem("polyquest-music-enabled");
-    if (saved !== "false") {
-      startBackgroundMusic();
-    }
-    window.removeEventListener("pointerdown", unlock);
-    window.removeEventListener("keydown", unlock);
+    getOrCreateAudioContext();
+    window.removeEventListener("click", unlock);
+    window.removeEventListener("touchstart", unlock);
   };
-
-  window.addEventListener("pointerdown", unlock, { once: true });
-  window.addEventListener("keydown", unlock, { once: true });
+  window.addEventListener("click", unlock, { once: true });
+  window.addEventListener("touchstart", unlock, { once: true });
 }
 
-// Preload voices
-if (typeof window !== "undefined" && "speechSynthesis" in window) {
-  window.speechSynthesis.getVoices();
-  window.speechSynthesis.onvoiceschanged = () => {
-    window.speechSynthesis.getVoices();
-  };
+export function getVoicePersona(): "child" | "educator" | "adventurer" {
+  return "child";
+}
+
+export function setVoicePersona(_persona: "child" | "educator" | "adventurer") {
+  // Always use the friendly kid voice persona
 }
