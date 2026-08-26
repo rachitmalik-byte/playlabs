@@ -4,155 +4,155 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Volume2, X } from "lucide-react";
 import { speak, playPopSound } from "@/lib/audio-manager";
-import { LottieAnimation, LottiePreset } from "@/components/lottie/LottieAnimation";
+import { IllustratedScienceCard, ScienceIllustrationType } from "@/components/learning/IllustratedScienceCard";
 
-// Simplified dictionary for 5th graders with transparent sketchbook vector Lottie animations
+// Simplified dictionary for 5th graders with clear minimal visual concept cards
 export const KID_DICTIONARY: Record<string, { 
   title: string; 
   emoji: string; 
   simpleDef: string; 
   example: string;
-  lottiePreset?: LottiePreset;
+  illustrationType: ScienceIllustrationType;
 }> = {
   "insulator": {
     title: "Insulator (Shield)",
     emoji: "🛡️",
-    simpleDef: "A material that stops electricity or heat from touching you!",
+    simpleDef: "A material that blocks electricity or heat from touching you!",
     example: "The blue plastic wrap on electrical wires keeps you safe from shocks!",
-    lottiePreset: "electricity"
+    illustrationType: "insulator"
   },
   "insulators": {
     title: "Insulators (Protectors)",
     emoji: "🛡️",
     simpleDef: "Materials that block heat and electricity from passing through.",
     example: "Plastic kettle handles stay cool so you can pour hot tea safely!",
-    lottiePreset: "electricity"
+    illustrationType: "insulator"
   },
   "heat insulator": {
     title: "Heat Insulator",
     emoji: "🧤",
     simpleDef: "Stops heat from spreading. The handle stays cool even when the pot boils!",
     example: "Wooden or plastic spoon handles stay cool in boiling hot soup!",
-    lottiePreset: "flame"
+    illustrationType: "heat_insulator"
   },
   "electrical insulator": {
     title: "Electrical Insulator",
     emoji: "🔌",
     simpleDef: "Stops electricity from escaping. It traps electric current inside the wire safely.",
     example: "Rubber and plastic coated wires prevent dangerous electric sparks!",
-    lottiePreset: "electricity"
+    illustrationType: "insulator"
   },
   "conductor": {
     title: "Conductor (Fast Carrier)",
     emoji: "⚡",
     simpleDef: "A material that lets heat or electricity rush through it super fast!",
     example: "Copper metal inside wires carries electricity to light bulbs!",
-    lottiePreset: "electricity"
+    illustrationType: "conductor"
   },
   "breathable": {
     title: "Breathable Cloth",
     emoji: "🌬️",
     simpleDef: "Has tiny air holes that let breeze in and sweat evaporate so you stay cool!",
     example: "Cotton shirts let your skin breathe during sunny summer play!",
-    lottiePreset: "plant"
+    illustrationType: "breathable"
   },
   "cotton": {
     title: "Natural Cotton",
     emoji: "🌿",
     simpleDef: "A soft fluffy plant fibre grown by nature in fields.",
     example: "Used for soft shirts, towels, and cozy bedsheets!",
-    lottiePreset: "plant"
+    illustrationType: "cotton"
   },
   "wrinkle-free": {
     title: "Wrinkle-Free (Smooth)",
     emoji: "👔",
     simpleDef: "Springs right back into smooth shape after folding, with zero crease marks!",
     example: "Polyester sportswear never gets messy wrinkles!",
-    lottiePreset: "jacket"
+    illustrationType: "wrinkle_compare"
   },
   "wrinkle-resistant": {
     title: "Wrinkle-Resistant (No Ironing)",
     emoji: "👔",
     simpleDef: "Fibres that resist bending and bounce back smooth like a spring!",
     example: "Polyester uniforms stay neat and crisp all day long!",
-    lottiePreset: "jacket"
+    illustrationType: "wrinkle_compare"
   },
   "tensile strength": {
     title: "Tensile Strength (Pulling Power)",
     emoji: "💪",
     simpleDef: "How much heavy pulling weight a rope can hold before snapping!",
     example: "Nylon ropes can hold over 120 kilograms without snapping!",
-    lottiePreset: "rope"
+    illustrationType: "tensile"
   },
   "nylon": {
     title: "Nylon (Super Thread)",
     emoji: "🧗",
     simpleDef: "A man-made miracle fibre that is actually stronger than a steel wire!",
     example: "Used in parachutes, mountain climbing ropes, and toothbrush bristles!",
-    lottiePreset: "rope"
+    illustrationType: "nylon"
   },
   "polyester": {
     title: "Polyester (Quick-Dry Fabric)",
     emoji: "🏃",
     simpleDef: "A durable synthetic fabric that dries fast and never wrinkles!",
     example: "Used for raincoats, athletic sportswear, and school backpacks!",
-    lottiePreset: "jacket"
+    illustrationType: "polyester"
   },
   "acrylic": {
     title: "Acrylic (Man-Made Wool)",
     emoji: "🧶",
     simpleDef: "Soft artificial wool made in factories that traps body heat to keep you warm.",
     example: "Used in warm winter sweaters, blankets, and woolly beanies!",
-    lottiePreset: "wool"
+    illustrationType: "acrylic"
   },
   "plastic": {
     title: "Plastic (Versatile Polymer)",
     emoji: "🧴",
     simpleDef: "A lightweight, moldable polymer that can be shaped into bottles, toys, and insulators!",
     example: "Water bottles, switchboards, and protective containers.",
-    lottiePreset: "bottle"
+    illustrationType: "plastic"
   },
   "rubber": {
     title: "Rubber (Elastic Bounce)",
     emoji: "🌴",
     simpleDef: "A flexible and stretchy material that bounces and bends easily.",
     example: "Vehicle tyres, bouncy balls, and flexible pencil erasers!",
-    lottiePreset: "rubber_tree"
+    illustrationType: "rubber"
   },
   "polymer": {
     title: "Polymer (Chain of Units)",
     emoji: "⛓️",
     simpleDef: "A giant molecule made of thousands of small units linked together like train cars!",
     example: "Plastics, nylon ropes, and polyester fabrics are all polymers!",
-    lottiePreset: "chemistry"
+    illustrationType: "polymer"
   },
   "monomer": {
     title: "Monomer (Single Building Block)",
     emoji: "🧪",
     simpleDef: "One single unit before it links with others to make a long chain.",
     example: "Like one single LEGO brick before you build a tall castle!",
-    lottiePreset: "chemistry"
+    illustrationType: "monomer"
   },
   "non-biodegradable": {
     title: "Non-Biodegradable",
     emoji: "⏳",
     simpleDef: "Cannot rot into soil. Soil bacteria cannot eat it, so it lasts for hundreds of years!",
     example: "Plastic bottles buried in dirt stay unchanged for 500+ years!",
-    lottiePreset: "bottle"
+    illustrationType: "non_biodegradable"
   },
   "synthetic": {
     title: "Synthetic (Man-Made)",
     emoji: "🏭",
     simpleDef: "Made by scientists in factories using petroleum chemicals instead of plants.",
     example: "Nylon, polyester, and plastics are all synthetic materials!",
-    lottiePreset: "jacket"
+    illustrationType: "synthetic"
   },
   "natural": {
     title: "Natural (From Nature)",
     emoji: "🌳",
     simpleDef: "Grown by nature from living plants, animals, or trees.",
     example: "Cotton from plants, wool from sheep, and silk from silkworms!",
-    lottiePreset: "plant"
+    illustrationType: "natural"
   }
 };
 
@@ -181,14 +181,13 @@ export function KidTermTooltip({
     emoji: "🔬",
     simpleDef: `A special science concept: ${term}.`,
     example: "Investigate this in your lab experiments!",
-    lottiePreset: "chemistry" as LottiePreset
+    illustrationType: "polymer" as ScienceIllustrationType
   };
 
   const updatePosition = useCallback(() => {
     if (!buttonRef.current || typeof window === "undefined") return;
     const rect = buttonRef.current.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
 
     // Vertical: If near top of screen (< 230px), open downwards. Otherwise open upwards.
     const vertical = rect.top < 230 ? "bottom" : "top";
@@ -218,35 +217,36 @@ export function KidTermTooltip({
     playPopSound();
     if (!isOpen) {
       updatePosition();
-      setIsOpen(true);
-    } else {
-      setIsOpen(false);
     }
+    setIsOpen(!isOpen);
   };
 
   const handleSpeak = (e: React.MouseEvent) => {
     e.stopPropagation();
     playPopSound();
-    speak(`${info.title}. ${info.simpleDef} Everyday example: ${info.example}`);
+    speak(`${info.title}. ${info.simpleDef} For example: ${info.example}`);
   };
 
-  // Get positioning class names based on dynamic screen coordinates
   const getPositionClasses = () => {
-    const verticalClass = placement.vertical === "bottom" 
-      ? "top-full mt-2" 
-      : "bottom-full mb-2";
+    let classes = "";
+    if (placement.vertical === "bottom") {
+      classes += " top-full mt-3";
+    } else {
+      classes += " bottom-full mb-3";
+    }
 
-    const horizontalClass = placement.horizontal === "left"
-      ? "left-0"
-      : placement.horizontal === "right"
-      ? "right-0"
-      : "left-1/2 -translate-x-1/2";
-
-    return `${verticalClass} ${horizontalClass}`;
+    if (placement.horizontal === "left") {
+      classes += " left-0";
+    } else if (placement.horizontal === "right") {
+      classes += " right-0";
+    } else {
+      classes += " left-1/2 -translate-x-1/2";
+    }
+    return classes;
   };
 
   return (
-    <span className="relative inline-block my-0.5">
+    <span className="relative inline-block">
       <button
         ref={buttonRef}
         type="button"
@@ -266,7 +266,7 @@ export function KidTermTooltip({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.12 }}
-            className={`fixed sm:absolute ${getPositionClasses()} z-50 w-auto sm:w-80 max-w-[calc(100vw-2rem)] bg-white rounded-3xl p-4 sm:p-5 shadow-warm border-2 border-purple-300 text-left cursor-default pointer-events-auto`}
+            className={`fixed sm:absolute ${getPositionClasses()} z-50 w-[290px] sm:w-[320px] max-w-[calc(100vw-2rem)] bg-white rounded-3xl p-4 sm:p-5 shadow-warm border-2 border-purple-300 text-left cursor-default pointer-events-auto`}
           >
             {/* Tooltip Tail */}
             <div
@@ -283,7 +283,7 @@ export function KidTermTooltip({
               }`}
             />
 
-            <div className="relative z-10 space-y-2.5">
+            <div className="relative z-10 space-y-3">
               {/* Header */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -317,24 +317,22 @@ export function KidTermTooltip({
                 </div>
               </div>
 
-              {/* Transparent Sketchbook Lottie Animation */}
-              {info.lottiePreset && (
-                <div className="rounded-2xl p-2 bg-gradient-to-br from-purple-50/60 to-indigo-50/60 border border-purple-100 flex items-center justify-center">
-                  <LottieAnimation
-                    preset={info.lottiePreset}
-                    width={70}
-                    height={70}
-                  />
-                </div>
-              )}
+              {/* Clear Minimal Illustrated Concept Card (Never Empty!) */}
+              <div className="rounded-2xl p-2.5 bg-gradient-to-br from-purple-50/80 via-blue-50/50 to-indigo-50/80 border border-purple-200 flex items-center justify-center shadow-inner">
+                <IllustratedScienceCard
+                  type={info.illustrationType}
+                  size="banner"
+                  className="w-full"
+                />
+              </div>
 
               {/* Simple 5th-Grade Definition */}
-              <p className="text-xs text-text-dark font-medium leading-relaxed">
+              <p className="text-xs text-text-dark font-semibold leading-relaxed">
                 {info.simpleDef}
               </p>
 
               {/* Real-world example */}
-              <div className="bg-purple-50/70 rounded-2xl p-2.5 text-[11px] text-purple-900 leading-snug">
+              <div className="bg-purple-50/80 rounded-2xl p-2.5 text-[11px] text-purple-900 leading-snug border border-purple-100">
                 <span className="font-bold">Everyday Example: </span>
                 <span>{info.example}</span>
               </div>
