@@ -8,7 +8,13 @@ import {
   electricityAnimation, 
   plantGrowthAnimation, 
   celebrationAnimation, 
-  waterDropletsAnimation 
+  waterDropletsAnimation,
+  woolSheepAnimation,
+  silkwormAnimation,
+  nylonRopeAnimation,
+  polyesterJacketAnimation,
+  plasticBottleAnimation,
+  rubberTreeAnimation
 } from "./animations";
 
 export type LottiePreset =
@@ -17,7 +23,13 @@ export type LottiePreset =
   | "electricity"
   | "plant"
   | "celebration"
-  | "water";
+  | "water"
+  | "wool"
+  | "silk"
+  | "rope"
+  | "jacket"
+  | "bottle"
+  | "rubber_tree";
 
 interface LottieAnimationProps {
   preset?: LottiePreset;
@@ -36,6 +48,12 @@ const PRESET_MAP: Record<LottiePreset, any> = {
   plant: plantGrowthAnimation,
   celebration: celebrationAnimation,
   water: waterDropletsAnimation,
+  wool: woolSheepAnimation,
+  silk: silkwormAnimation,
+  rope: nylonRopeAnimation,
+  jacket: polyesterJacketAnimation,
+  bottle: plasticBottleAnimation,
+  rubber_tree: rubberTreeAnimation,
 };
 
 export function LottieAnimation({
@@ -61,21 +79,21 @@ export function LottieAnimation({
         className={`flex items-center justify-center ${className}`}
         style={{ width, height }}
       >
-        <div className="w-8 h-8 rounded-full border-2 border-pip-blue border-t-transparent animate-spin" />
+        <div className="w-6 h-6 rounded-full border-2 border-pip-blue border-t-transparent animate-spin" />
       </div>
     );
   }
 
   return (
     <div
-      className={`inline-flex items-center justify-center select-none pointer-events-none ${className}`}
+      className={`inline-flex items-center justify-center select-none pointer-events-none bg-transparent ${className}`}
       style={{ width, height }}
     >
       <Lottie
         src={data}
         loop={loop}
         autoplay={autoplay}
-        style={{ width: "100%", height: "100%" }}
+        style={{ width: "100%", height: "100%", background: "transparent" }}
       />
     </div>
   );

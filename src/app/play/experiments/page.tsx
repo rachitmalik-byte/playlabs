@@ -9,6 +9,7 @@ import { playDiscoverySound, playPopSound, playClickSound, speak } from '@/lib/a
 import { KidTermTooltip } from '@/components/learning/KidTermTooltip';
 import { SentenceVoiceReader } from '@/components/learning/SentenceVoiceReader';
 import { ParentPinGateModal } from '@/components/learning/ParentPinGateModal';
+import { LottieAnimation } from '@/components/lottie/LottieAnimation';
 import { Sparkles, Dumbbell, ShoppingBag, Lightbulb, ArrowLeft, ArrowRight, RotateCcw, Lock } from 'lucide-react';
 
 export default function ExperimentsMission() {
@@ -270,11 +271,7 @@ export default function ExperimentsMission() {
                   onClick={() => handlePredict('nylon')}
                   className="bg-white p-8 rounded-3xl border-4 border-pip-blue hover:border-pip-blue-dark shadow-soft flex flex-col items-center gap-3 transition-all hover:scale-105"
                 >
-                  <img
-                    src="/images/nylon_climbing_rope.jpg"
-                    alt="Nylon"
-                    className="w-24 h-24 rounded-2xl object-cover shadow-soft"
-                  />
+                  <LottieAnimation preset="rope" width={90} height={90} />
                   <span className="text-xl font-extrabold text-pip-blue-dark">Nylon Thread</span>
                   <span className="text-xs text-text-muted"><KidTermTooltip term="synthetic" displayText="Synthetic" /> <KidTermTooltip term="polymer" displayText="polymer" /></span>
                 </button>

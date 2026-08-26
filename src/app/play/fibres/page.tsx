@@ -8,16 +8,28 @@ import { VoiceUnlockModal } from '@/components/learning/VoiceUnlockModal';
 import { KidTermTooltip } from '@/components/learning/KidTermTooltip';
 import { SentenceVoiceReader } from '@/components/learning/SentenceVoiceReader';
 import { ParentPinGateModal } from '@/components/learning/ParentPinGateModal';
+import { LottieAnimation, LottiePreset } from '@/components/lottie/LottieAnimation';
 import { Mic, ArrowLeft, ArrowRight, Sparkles, Volume2, CheckCircle2, RotateCcw, Lock } from 'lucide-react';
 import { playPopSound, playDiscoverySound, playClickSound, speak } from '@/lib/audio-manager';
 import { logChildAttempt } from '@/lib/learning-engine';
 
-const FABRICS = [
+const FABRICS: {
+  id: string;
+  name: string;
+  emoji: string;
+  lottiePreset: LottiePreset;
+  color: string;
+  superpower: string;
+  termKey: string;
+  uses: { name: string; emoji: string }[];
+  description: string;
+  traitExplanation: string;
+}[] = [
   {
     id: 'cotton',
     name: 'Cotton',
     emoji: '☁️',
-    image: '/images/cotton_plant_fabric.jpg',
+    lottiePreset: 'plant',
     color: 'bg-white',
     superpower: 'Breathable & Soft',
     termKey: 'breathable',
@@ -29,7 +41,7 @@ const FABRICS = [
     id: 'nylon',
     name: 'Nylon',
     emoji: '🧗',
-    image: '/images/nylon_climbing_rope.jpg',
+    lottiePreset: 'rope',
     color: 'bg-pip-blue-light/40',
     superpower: 'Super Strong & Elastic',
     termKey: 'tensile strength',
@@ -41,7 +53,7 @@ const FABRICS = [
     id: 'polyester',
     name: 'Polyester',
     emoji: '🏃',
-    image: '/images/polyester_jacket_fabric.jpg',
+    lottiePreset: 'jacket',
     color: 'bg-factory-orange/20',
     superpower: 'Wrinkle-Resistant & Quick-Dry',
     termKey: 'wrinkle-resistant',
@@ -53,7 +65,7 @@ const FABRICS = [
     id: 'acrylic',
     name: 'Acrylic',
     emoji: '🧶',
-    image: '/images/wool_sheep_fleece.jpg',
+    lottiePreset: 'wool',
     color: 'bg-fire-red/20',
     superpower: 'Warm & Wool-Like',
     termKey: 'heat insulator',
@@ -210,10 +222,11 @@ export default function FibresMission() {
                   whileHover={{ scale: 1.04 }}
                   whileTap={{ scale: 0.96 }}
                 >
-                  <img
-                    src={fabric.image}
-                    alt={fabric.name}
-                    className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl object-cover mb-2 border border-lab-wood/15 shadow-xs"
+                  <LottieAnimation
+                    preset={fabric.lottiePreset}
+                    width={72}
+                    height={72}
+                    className="mb-1"
                   />
                   <h3 className="font-black text-sm text-text-dark">{fabric.name}</h3>
                   <span className="text-[10px] text-pip-blue-dark font-extrabold mt-0.5">

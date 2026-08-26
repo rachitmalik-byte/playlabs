@@ -4,142 +4,127 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Volume2, X } from "lucide-react";
 import { speak, playPopSound } from "@/lib/audio-manager";
+import { LottieAnimation, LottiePreset } from "@/components/lottie/LottieAnimation";
 
-// Simplified dictionary for 5th graders with clear generated illustrations
+// Simplified dictionary for 5th graders with transparent sketchbook vector Lottie animations
 export const KID_DICTIONARY: Record<string, { 
   title: string; 
   emoji: string; 
   simpleDef: string; 
   example: string;
-  image?: string;
-  imageCaption?: string;
+  lottiePreset?: LottiePreset;
 }> = {
   "insulator": {
     title: "Insulator (Shield)",
     emoji: "🛡️",
     simpleDef: "A material that stops electricity or heat from touching you!",
     example: "The blue plastic wrap on electrical wires keeps you safe from shocks!",
-    image: "/images/plastic_insulator_lab.jpg",
-    imageCaption: "Blue plastic wrap blocks electric shocks & keeps handles cool!"
+    lottiePreset: "electricity"
   },
   "insulators": {
     title: "Insulators (Protectors)",
     emoji: "🛡️",
     simpleDef: "Materials that block heat and electricity from passing through.",
     example: "Plastic kettle handles stay cool so you can pour hot tea safely!",
-    image: "/images/plastic_insulator_lab.jpg",
-    imageCaption: "Insulators protect your hands from burns and shocks!"
+    lottiePreset: "electricity"
   },
   "heat insulator": {
     title: "Heat Insulator",
     emoji: "🧤",
     simpleDef: "Stops heat from spreading. The handle stays cool even when the pot boils!",
     example: "Wooden or plastic spoon handles stay cool in boiling hot soup!",
-    image: "/images/plastic_insulator_lab.jpg",
-    imageCaption: "Cool black plastic handle on hot pan!"
+    lottiePreset: "flame"
   },
   "electrical insulator": {
     title: "Electrical Insulator",
     emoji: "🔌",
     simpleDef: "Stops electricity from escaping. It traps electric current inside the wire safely.",
     example: "Rubber and plastic coated wires prevent dangerous electric sparks!",
-    image: "/images/plastic_insulator_lab.jpg",
-    imageCaption: "Plastic coating traps electricity safely inside!"
+    lottiePreset: "electricity"
   },
   "conductor": {
     title: "Conductor (Fast Carrier)",
     emoji: "⚡",
     simpleDef: "A material that lets heat or electricity rush through it super fast!",
     example: "Copper metal inside wires carries electricity to light bulbs!",
-    image: "/images/plastic_insulator_lab.jpg",
-    imageCaption: "Copper metal inside wire conducts electricity fast!"
+    lottiePreset: "electricity"
   },
   "breathable": {
     title: "Breathable Cloth",
     emoji: "🌬️",
     simpleDef: "Has tiny air holes that let breeze in and sweat evaporate so you stay cool!",
     example: "Cotton shirts let your skin breathe during sunny summer play!",
-    image: "/images/cotton_plant_fabric.jpg",
-    imageCaption: "Natural cotton plant fibres have tiny air pores!"
+    lottiePreset: "plant"
   },
   "cotton": {
     title: "Natural Cotton",
     emoji: "🌿",
     simpleDef: "A soft fluffy plant fibre grown by nature in fields.",
     example: "Used for soft shirts, towels, and cozy bedsheets!",
-    image: "/images/cotton_plant_fabric.jpg",
-    imageCaption: "Fluffy white cotton plant grown by nature!"
+    lottiePreset: "plant"
   },
   "wrinkle-free": {
     title: "Wrinkle-Free (Smooth)",
     emoji: "👔",
     simpleDef: "Springs right back into smooth shape after folding, with zero crease marks!",
     example: "Polyester sportswear never gets messy wrinkles!",
-    image: "/images/wrinkle_vs_smooth.jpg",
-    imageCaption: "Messy wrinkled shirt (Left) vs Crisp smooth polyester (Right)!"
+    lottiePreset: "jacket"
   },
   "wrinkle-resistant": {
     title: "Wrinkle-Resistant (No Ironing)",
     emoji: "👔",
     simpleDef: "Fibres that resist bending and bounce back smooth like a spring!",
     example: "Polyester uniforms stay neat and crisp all day long!",
-    image: "/images/wrinkle_vs_smooth.jpg",
-    imageCaption: "Messy wrinkled cloth ❌ vs Crisp smooth polyester ✅!"
+    lottiePreset: "jacket"
   },
   "tensile strength": {
     title: "Tensile Strength (Pulling Power)",
     emoji: "💪",
     simpleDef: "How much heavy weight a rope can pull without breaking!",
     example: "Nylon ropes can hold over 120 kilograms without snapping!",
-    image: "/images/nylon_climbing_rope.jpg",
-    imageCaption: "Nylon rope easily lifts heavy weight blocks!"
+    lottiePreset: "rope"
   },
   "nylon": {
     title: "Nylon (Super Thread)",
     emoji: "🧗",
     simpleDef: "A man-made miracle fibre that is actually stronger than a steel wire!",
     example: "Used in parachutes, mountain climbing ropes, and toothbrush bristles!",
-    image: "/images/nylon_climbing_rope.jpg",
-    imageCaption: "Super strong blue nylon climbing rope!"
+    lottiePreset: "rope"
   },
   "polymer": {
     title: "Polymer (Chain Molecule)",
     emoji: "⛓️",
     simpleDef: "A super long chain made of thousands of tiny pieces connected like train cars!",
     example: "Plastic bottles, nylon ropes, and rubber tyres are all polymers!",
-    image: "/images/nylon_climbing_rope.jpg",
-    imageCaption: "Thousands of tiny monomer units linked into strong chains!"
+    lottiePreset: "chemistry"
   },
   "monomer": {
-    title: "Monomer (Single Bead)",
+    title: "Monomer (Single Building Block)",
     emoji: "🧪",
     simpleDef: "One single building block before it links with others to make a long chain.",
     example: "Like one single LEGO brick before you build a tall tower!",
-    image: "/images/plastic_insulator_lab.jpg"
+    lottiePreset: "chemistry"
   },
   "non-biodegradable": {
     title: "Non-Biodegradable",
     emoji: "⏳",
     simpleDef: "Cannot rot into soil. Soil bacteria cannot eat it, so it lasts for hundreds of years!",
     example: "Plastic bottles buried in dirt stay unchanged for 500+ years!",
-    image: "/images/plastic_insulator_lab.jpg",
-    imageCaption: "Synthetic plastic bonds resist bacterial decay for centuries."
+    lottiePreset: "bottle"
   },
   "synthetic": {
     title: "Synthetic (Man-Made)",
     emoji: "🏭",
     simpleDef: "Made by scientists in factories using petroleum chemicals instead of plants.",
     example: "Nylon, polyester, and plastics are all synthetic materials!",
-    image: "/images/nylon_climbing_rope.jpg",
-    imageCaption: "Man-made in chemical laboratories!"
+    lottiePreset: "jacket"
   },
   "natural": {
     title: "Natural (From Nature)",
     emoji: "🌳",
     simpleDef: "Grown by nature from living plants, animals, or trees.",
     example: "Cotton from plants, wool from sheep, and silk from silkworms!",
-    image: "/images/cotton_plant_fabric.jpg",
-    imageCaption: "Grown directly by nature!"
+    lottiePreset: "plant"
   }
 };
 
@@ -235,19 +220,14 @@ export function KidTermTooltip({
                 </div>
               </div>
 
-              {/* Real Generated Visual Illustration */}
-              {info.image && (
-                <div className="rounded-2xl overflow-hidden border-2 border-purple-100 shadow-xs bg-purple-50/50">
-                  <img
-                    src={info.image}
-                    alt={info.title}
-                    className="w-full h-28 sm:h-32 object-cover"
+              {/* Transparent Sketchbook Lottie Animation */}
+              {info.lottiePreset && (
+                <div className="rounded-2xl p-2 bg-gradient-to-br from-purple-50/60 to-indigo-50/60 border border-purple-100 flex items-center justify-center">
+                  <LottieAnimation
+                    preset={info.lottiePreset}
+                    width={70}
+                    height={70}
                   />
-                  {info.imageCaption && (
-                    <div className="p-2 bg-white/95 text-[10px] sm:text-[11px] font-extrabold text-purple-900 leading-tight">
-                      📸 {info.imageCaption}
-                    </div>
-                  )}
                 </div>
               )}
 

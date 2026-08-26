@@ -15,6 +15,8 @@ import {
 } from "@/lib/audio-manager";
 import { KidTermTooltip } from "@/components/learning/KidTermTooltip";
 import { VoiceUnlockModal } from "@/components/learning/VoiceUnlockModal";
+import { SentenceVoiceReader } from "@/components/learning/SentenceVoiceReader";
+import { LottieAnimation, LottiePreset } from "@/components/lottie/LottieAnimation";
 import { ArrowLeft, ArrowRight, RotateCcw, Sparkles, CheckCircle2, AlertTriangle, Lightbulb } from "lucide-react";
 
 type Phase =
@@ -31,19 +33,19 @@ type MaterialItem = {
   category: "natural" | "synthetic";
   origin: string;
   madeFrom: string;
-  image?: string;
+  lottiePreset: LottiePreset;
 };
 
 const MATERIALS: MaterialItem[] = [
-  { id: "cotton", name: "Cotton", emoji: "🌿", category: "natural", origin: "Cotton plant", madeFrom: "Plant fibres", image: "/images/cotton_plant_fabric.jpg" },
-  { id: "wool", name: "Wool", emoji: "🐑", category: "natural", origin: "Sheep", madeFrom: "Animal hair", image: "/images/wool_sheep_fleece.jpg" },
-  { id: "silk", name: "Silk", emoji: "🐛", category: "natural", origin: "Silkworm", madeFrom: "Silkworm cocoon", image: "/images/silk_cocoon_moth.jpg" },
-  { id: "wood", name: "Wood", emoji: "🪵", category: "natural", origin: "Trees", madeFrom: "Tree trunk", image: "/images/rubber_tree_wood.jpg" },
-  { id: "rubber_natural", name: "Natural Rubber", emoji: "🌴", category: "natural", origin: "Rubber tree", madeFrom: "Tree sap (latex)", image: "/images/rubber_tree_wood.jpg" },
-  { id: "nylon", name: "Nylon", emoji: "🧵", category: "synthetic", origin: "Factory", madeFrom: "Chemicals from petroleum", image: "/images/nylon_climbing_rope.jpg" },
-  { id: "polyester", name: "Polyester", emoji: "👔", category: "synthetic", origin: "Factory", madeFrom: "Chemicals from petroleum", image: "/images/polyester_jacket_fabric.jpg" },
-  { id: "plastic", name: "Plastic", emoji: "🧴", category: "synthetic", origin: "Factory", madeFrom: "Chemicals from petroleum", image: "/images/plastic_insulator_lab.jpg" },
-  { id: "acrylic", name: "Acrylic", emoji: "🧶", category: "synthetic", origin: "Factory", madeFrom: "Chemicals", image: "/images/wool_sheep_fleece.jpg" },
+  { id: "cotton", name: "Cotton", emoji: "🌿", category: "natural", origin: "Cotton plant", madeFrom: "Plant fibres", lottiePreset: "plant" },
+  { id: "wool", name: "Wool", emoji: "🐑", category: "natural", origin: "Sheep", madeFrom: "Animal fleece", lottiePreset: "wool" },
+  { id: "silk", name: "Silk", emoji: "🐛", category: "natural", origin: "Silkworm", madeFrom: "Silkworm cocoon", lottiePreset: "silk" },
+  { id: "wood", name: "Wood", emoji: "🪵", category: "natural", origin: "Trees", madeFrom: "Tree trunk", lottiePreset: "rubber_tree" },
+  { id: "rubber_natural", name: "Natural Rubber", emoji: "🌴", category: "natural", origin: "Rubber tree", madeFrom: "Tree sap (latex)", lottiePreset: "rubber_tree" },
+  { id: "nylon", name: "Nylon", emoji: "🧵", category: "synthetic", origin: "Factory", madeFrom: "Petroleum chemicals", lottiePreset: "rope" },
+  { id: "polyester", name: "Polyester", emoji: "👔", category: "synthetic", origin: "Factory", madeFrom: "Petroleum chemicals", lottiePreset: "jacket" },
+  { id: "plastic", name: "Plastic", emoji: "🧴", category: "synthetic", origin: "Factory", madeFrom: "Petroleum polymers", lottiePreset: "bottle" },
+  { id: "acrylic", name: "Acrylic", emoji: "🧶", category: "synthetic", origin: "Factory", madeFrom: "Synthetic wool chemicals", lottiePreset: "wool" },
 ];
 
 function shuffleMaterials(items: MaterialItem[]): MaterialItem[] {
@@ -253,7 +255,7 @@ export default function OriginsPage() {
 
                   <motion.button
                     onClick={() => changePhase("sorting")}
-                    className="px-8 py-4 bg-gradient-to-r from-pip-blue to-indigo-600 hover:from-pip-blue-dark hover:to-indigo-700 text-white font-black rounded-2xl shadow-warm text-base flex items-center justify-center gap-2 mx-auto transition-all"
+                    className="px-8 py-4 bg-gradient-to-r from-pip-blue to-indigo-600 hover:from-pip-blue-dark hover:to-indigo-700 text-white font-black rounded-2xl shadow-warm text-base flex items-center justify-center gap-2 mx-auto transition-all cursor-pointer"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
@@ -333,7 +335,7 @@ export default function OriginsPage() {
                 whileHover={{ scale: 1.01 }}
               >
                 <div className="flex items-center gap-3 mb-4 w-full">
-                  <span className="text-4xl">🌳</span>
+                  <LottieAnimation preset="plant" width={46} height={46} />
                   <div className="text-left">
                     <h2 className="text-lg font-black text-emerald-950">
                       From Nature
@@ -411,21 +413,18 @@ export default function OriginsPage() {
                         whileTap={{ scale: 0.95 }}
                         layout
                       >
-                        {item.image ? (
-                          <img
-                            src={item.image}
-                            alt={item.name}
-                            className="w-16 h-16 rounded-2xl object-cover mb-1.5 border border-lab-wood/15 shadow-xs"
-                          />
-                        ) : (
-                          <span className="text-4xl mb-1">{item.emoji}</span>
-                        )}
+                        <LottieAnimation
+                          preset={item.lottiePreset}
+                          width={58}
+                          height={58}
+                          className="mb-1"
+                        />
 
                         <span className="text-xs font-black text-text-dark text-center">
                           {item.name}
                         </span>
 
-                        {/* Fast Choice Action Buttons */}
+                        {/* Fast Action Buttons */}
                         <div className="mt-2.5 flex items-center gap-1.5">
                           <button
                             type="button"
@@ -462,8 +461,8 @@ export default function OriginsPage() {
                       animate={{ opacity: 1, scale: 1 }}
                       className="text-center py-6"
                     >
-                      <span className="text-6xl block mb-2 animate-bounce">🎉</span>
-                      <p className="text-base font-black text-text-dark">
+                      <LottieAnimation preset="celebration" width={80} height={80} />
+                      <p className="text-base font-black text-text-dark mt-2">
                         Awesome! All items sorted!
                       </p>
                     </motion.div>
@@ -487,7 +486,7 @@ export default function OriginsPage() {
                 whileHover={{ scale: 1.01 }}
               >
                 <div className="flex items-center gap-3 mb-4 w-full">
-                  <span className="text-4xl">🏭</span>
+                  <LottieAnimation preset="chemistry" width={46} height={46} />
                   <div className="text-left">
                     <h2 className="text-lg font-black text-blue-950">
                       Made by People
@@ -548,7 +547,7 @@ export default function OriginsPage() {
 
                 <motion.button
                   onClick={() => changePhase("concept")}
-                  className="px-8 py-3.5 bg-gradient-to-r from-pip-blue to-indigo-600 hover:from-pip-blue-dark hover:to-indigo-700 text-white font-black rounded-2xl shadow-soft text-sm flex items-center justify-center gap-2 mx-auto transition-all"
+                  className="px-8 py-3.5 bg-gradient-to-r from-pip-blue to-indigo-600 hover:from-pip-blue-dark hover:to-indigo-700 text-white font-black rounded-2xl shadow-soft text-sm flex items-center justify-center gap-2 mx-auto transition-all cursor-pointer"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
@@ -561,7 +560,7 @@ export default function OriginsPage() {
         )}
 
         {/* ============================================================
-            PHASE 3: CONCEPT EXPLANATIONS WITH GENERATED GRAPHICS
+            PHASE 3: CONCEPT EXPLANATIONS WITH TRANSPARENT SKETCHBOOK LOTTIE
             ============================================================ */}
         {phase === "concept" && (
           <motion.div
@@ -593,7 +592,7 @@ export default function OriginsPage() {
               {/* Natural Family */}
               <div className="bg-emerald-50/70 border-3 border-emerald-300 rounded-3xl p-6 shadow-soft space-y-4">
                 <div className="flex items-center gap-3">
-                  <span className="text-4xl">🌿</span>
+                  <LottieAnimation preset="plant" width={40} height={40} />
                   <div>
                     <h2 className="text-lg font-black text-emerald-950">
                       <KidTermTooltip term="natural" displayText="Natural Materials" />
@@ -604,13 +603,13 @@ export default function OriginsPage() {
 
                 <div className="grid grid-cols-2 gap-2.5">
                   {[
-                    { name: "Cotton", img: "/images/cotton_plant_fabric.jpg", sub: "From cotton plant bolls" },
-                    { name: "Wool", img: "/images/wool_sheep_fleece.jpg", sub: "From sheep fleece" },
-                    { name: "Silk", img: "/images/silk_cocoon_moth.jpg", sub: "From silkworm cocoons" },
-                    { name: "Rubber", img: "/images/rubber_tree_wood.jpg", sub: "From rubber tree sap" },
+                    { name: "Cotton", preset: "plant" as LottiePreset, sub: "From cotton plant bolls" },
+                    { name: "Wool", preset: "wool" as LottiePreset, sub: "From sheep fleece" },
+                    { name: "Silk", preset: "silk" as LottiePreset, sub: "From silkworm cocoons" },
+                    { name: "Rubber", preset: "rubber_tree" as LottiePreset, sub: "From rubber tree sap" },
                   ].map((item) => (
-                    <div key={item.name} className="bg-white p-2.5 rounded-2xl border border-emerald-200 text-center flex flex-col items-center">
-                      <img src={item.img} alt={item.name} className="w-14 h-14 rounded-xl object-cover mb-1 border" />
+                    <div key={item.name} className="bg-white p-3 rounded-2xl border border-emerald-200 text-center flex flex-col items-center">
+                      <LottieAnimation preset={item.preset} width={50} height={50} className="mb-1" />
                       <span className="text-xs font-black text-emerald-950">{item.name}</span>
                       <span className="text-[9px] text-text-muted">{item.sub}</span>
                     </div>
@@ -621,7 +620,7 @@ export default function OriginsPage() {
               {/* Synthetic Family */}
               <div className="bg-blue-50/70 border-3 border-blue-300 rounded-3xl p-6 shadow-soft space-y-4">
                 <div className="flex items-center gap-3">
-                  <span className="text-4xl">🏭</span>
+                  <LottieAnimation preset="chemistry" width={40} height={40} />
                   <div>
                     <h2 className="text-lg font-black text-blue-950">
                       <KidTermTooltip term="synthetic" displayText="Synthetic Materials" />
@@ -632,13 +631,13 @@ export default function OriginsPage() {
 
                 <div className="grid grid-cols-2 gap-2.5">
                   {[
-                    { name: "Nylon", img: "/images/nylon_climbing_rope.jpg", sub: "Stronger than steel" },
-                    { name: "Polyester", img: "/images/polyester_jacket_fabric.jpg", sub: "Wrinkle-free & quick-dry" },
-                    { name: "Plastic", img: "/images/plastic_insulator_lab.jpg", sub: "Insulator & lightweight" },
-                    { name: "Acrylic", img: "/images/wool_sheep_fleece.jpg", sub: "Man-made warm wool" },
+                    { name: "Nylon", preset: "rope" as LottiePreset, sub: "Stronger than steel" },
+                    { name: "Polyester", preset: "jacket" as LottiePreset, sub: "Wrinkle-free & quick-dry" },
+                    { name: "Plastic", preset: "bottle" as LottiePreset, sub: "Insulator & lightweight" },
+                    { name: "Acrylic", preset: "wool" as LottiePreset, sub: "Man-made warm wool" },
                   ].map((item) => (
-                    <div key={item.name} className="bg-white p-2.5 rounded-2xl border border-blue-200 text-center flex flex-col items-center">
-                      <img src={item.img} alt={item.name} className="w-14 h-14 rounded-xl object-cover mb-1 border" />
+                    <div key={item.name} className="bg-white p-3 rounded-2xl border border-blue-200 text-center flex flex-col items-center">
+                      <LottieAnimation preset={item.preset} width={50} height={50} className="mb-1" />
                       <span className="text-xs font-black text-blue-950">{item.name}</span>
                       <span className="text-[9px] text-text-muted">{item.sub}</span>
                     </div>
@@ -650,7 +649,7 @@ export default function OriginsPage() {
             <div className="text-center">
               <motion.button
                 onClick={() => changePhase("exam-bridge")}
-                className="px-8 py-4 bg-gradient-to-r from-pip-blue to-indigo-600 hover:from-pip-blue-dark hover:to-indigo-700 text-white font-black rounded-2xl shadow-warm text-base flex items-center justify-center gap-2 mx-auto transition-all"
+                className="px-8 py-4 bg-gradient-to-r from-pip-blue to-indigo-600 hover:from-pip-blue-dark hover:to-indigo-700 text-white font-black rounded-2xl shadow-warm text-base flex items-center justify-center gap-2 mx-auto transition-all cursor-pointer"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -699,12 +698,19 @@ export default function OriginsPage() {
                 <p><strong>Synthetic Fibres:</strong> Made by human beings through chemical processing of petrochemicals (nylon, polyester, acrylic).</p>
               </div>
 
+              <div className="pt-2">
+                <SentenceVoiceReader
+                  sentence="Natural fibres come from plants and animals, while synthetic fibres are man-made from chemicals!"
+                  conceptTitle="Origins Concept Summary"
+                />
+              </div>
+
               <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-3">
                 <button
                   onClick={() => setShowVoiceModal(true)}
                   className="w-full sm:w-auto px-6 py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-black rounded-2xl shadow-soft text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
                 >
-                  <span>🎙️ Voice Password Unlock: Say &ldquo;SYNTHETIC&rdquo;</span>
+                  <span>🎙️ Voice Password: Say &ldquo;SYNTHETIC&rdquo;</span>
                 </button>
 
                 <Link
