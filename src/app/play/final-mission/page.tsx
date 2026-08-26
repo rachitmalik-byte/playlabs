@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { LottieAnimation } from "@/components/lottie/LottieAnimation";
 
 // === FINAL MISSION: PIP'S SAFE CAMP ===
 // The child must choose the right materials for various camp needs
@@ -145,14 +146,10 @@ export default function FinalMissionPage() {
           animate={{ opacity: 1, scale: 1 }}
           className="text-center"
         >
-          {/* Camp illustration */}
-          <motion.div
-            className="text-7xl mb-6"
-            animate={{ y: [0, -8, 0] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          >
-            🏕️
-          </motion.div>
+          {/* Celebration Animation & Camp illustration */}
+          <div className="flex justify-center items-center mb-4">
+            <LottieAnimation preset="celebration" width={140} height={140} />
+          </div>
 
           <h1 className="text-3xl sm:text-4xl font-extrabold text-text-dark mb-4">
             {score >= 6

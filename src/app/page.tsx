@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Laboratory } from "@/components/world/Laboratory";
 import { WordScrambleGame } from "@/components/learning/WordScrambleGame";
 import { KidTermTooltip } from "@/components/learning/KidTermTooltip";
+import { LottieAnimation } from "@/components/lottie/LottieAnimation";
 import { 
   Volume2, 
   VolumeX, 
@@ -301,8 +302,9 @@ export default function TableOfContentsPage() {
                         </div>
                       </div>
 
-                      {/* Right Action Button */}
-                      <div className="shrink-0 w-full md:w-auto">
+                      {/* Right Action Button & Chemistry Lottie */}
+                      <div className="shrink-0 w-full md:w-auto flex flex-col items-center gap-2">
+                        <LottieAnimation preset="chemistry" width={80} height={80} />
                         <Link
                           href="/play"
                           onClick={() => {

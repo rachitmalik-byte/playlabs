@@ -8,6 +8,7 @@ import { Zap, ShieldAlert, ArrowRight, ArrowLeft, Lightbulb, Thermometer, Info, 
 import { KidTermTooltip } from '@/components/learning/KidTermTooltip';
 import { SentenceVoiceReader } from '@/components/learning/SentenceVoiceReader';
 import { ParentPinGateModal } from '@/components/learning/ParentPinGateModal';
+import { LottieAnimation } from '@/components/lottie/LottieAnimation';
 import { logChildAttempt } from '@/lib/learning-engine';
 import { playDiscoverySound, playWarningSound, playPopSound, playClickSound, speak } from '@/lib/audio-manager';
 
@@ -256,15 +257,17 @@ export default function PlasticMission() {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <span className={`text-4xl transition-all ${
-                      wireMaterial === 'plastic' || wireMaterial === 'rubber'
-                        ? 'text-yellow-300 drop-shadow-[0_0_15px_rgba(253,224,71,0.9)] animate-bounce'
-                        : wireMaterial === 'metal'
-                        ? 'text-rose-400 animate-ping'
-                        : 'text-gray-500 opacity-60'
-                    }`}>
-                      💡
-                    </span>
+                    {wireMaterial === 'plastic' || wireMaterial === 'rubber' ? (
+                      <LottieAnimation preset="electricity" width={70} height={70} />
+                    ) : (
+                      <span className={`text-4xl transition-all ${
+                        wireMaterial === 'metal'
+                          ? 'text-rose-400 animate-ping'
+                          : 'text-gray-500 opacity-60'
+                      }`}>
+                        💡
+                      </span>
+                    )}
                     <span className="text-xs font-mono font-bold text-slate-300">Bulb</span>
                   </div>
                 </div>

@@ -10,6 +10,7 @@ import { playDiscoverySound, playWarningSound, playClickSound, playPopSound, spe
 import { KidTermTooltip } from '@/components/learning/KidTermTooltip';
 import { SentenceVoiceReader } from '@/components/learning/SentenceVoiceReader';
 import { ParentPinGateModal } from '@/components/learning/ParentPinGateModal';
+import { LottieAnimation } from '@/components/lottie/LottieAnimation';
 
 export default function SafetyMission() {
   const [activeTab, setActiveTab] = useState<'fire' | 'sweat'>('fire');
@@ -197,14 +198,8 @@ export default function SafetyMission() {
                   {/* Flame Result Box */}
                   <div className="bg-slate-900 rounded-3xl p-6 text-white border-4 border-slate-700 flex flex-col sm:flex-row items-center justify-around gap-6">
                     <div className="flex flex-col items-center">
-                      <motion.span 
-                        className="text-6xl"
-                        animate={{ scale: [1, 1.15, 1], rotate: [-2, 2, -2] }}
-                        transition={{ repeat: Infinity, duration: 0.8 }}
-                      >
-                        🔥
-                      </motion.span>
-                      <span className="text-xs font-mono font-bold text-amber-400 mt-2">Virtual Flame Rig</span>
+                      <LottieAnimation preset="flame" width={110} height={110} />
+                      <span className="text-xs font-mono font-bold text-amber-400 mt-1">Virtual Flame Rig</span>
                     </div>
 
                     <div className="bg-white/10 p-5 rounded-2xl border border-white/20 text-center max-w-sm">
@@ -255,6 +250,10 @@ export default function SafetyMission() {
                 <p className="text-base text-text-dark font-semibold">
                   Pip says: &ldquo;Hot summer day! Which shirt should we wear under the burning sun? Let&apos;s pour water drops to test sweat absorption!&rdquo;
                 </p>
+              </div>
+
+              <div className="flex justify-center mb-2">
+                <LottieAnimation preset="water" width={90} height={90} />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-lg mx-auto">
