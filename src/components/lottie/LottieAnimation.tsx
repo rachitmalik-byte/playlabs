@@ -72,7 +72,7 @@ export function LottieAnimation({
       style={{ width, height }}
     >
       <Lottie
-        animationData={data}
+        src={data}
         loop={loop}
         autoplay={autoplay}
         style={{ width: "100%", height: "100%" }}
