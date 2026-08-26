@@ -8,6 +8,7 @@ import { Laboratory } from "@/components/world/Laboratory";
 import { WordScrambleGame } from "@/components/learning/WordScrambleGame";
 import { KidTermTooltip } from "@/components/learning/KidTermTooltip";
 import { LottieAnimation } from "@/components/lottie/LottieAnimation";
+import { IllustratedScienceCard } from "@/components/learning/IllustratedScienceCard";
 import { 
   Volume2, 
   VolumeX, 
@@ -255,12 +256,12 @@ export default function TableOfContentsPage() {
                     >
                       {/* Left Side: Images and Title */}
                       <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 text-center sm:text-left flex-1">
-                        {/* Generated Image Thumbnail */}
-                        <div className="relative shrink-0">
-                          <img
-                            src={ch.image}
-                            alt={ch.title}
-                            className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl object-cover border-2 border-pip-blue/30 shadow-soft"
+                        {/* Clean Illustrated Science Banner */}
+                        <div className="relative shrink-0 p-3 bg-blue-50/80 rounded-3xl border-2 border-pip-blue/30 shadow-soft">
+                          <IllustratedScienceCard
+                            type="cotton"
+                            title="Materials Lab"
+                            size="md"
                           />
                           <span className="absolute -top-2 -right-2 text-2xl animate-bounce">
                             ⭐

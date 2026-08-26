@@ -9,6 +9,7 @@ import { KidTermTooltip } from '@/components/learning/KidTermTooltip';
 import { SentenceVoiceReader } from '@/components/learning/SentenceVoiceReader';
 import { ParentPinGateModal } from '@/components/learning/ParentPinGateModal';
 import { LottieAnimation, LottiePreset } from '@/components/lottie/LottieAnimation';
+import { IllustratedScienceCard, ScienceIllustrationType } from '@/components/learning/IllustratedScienceCard';
 import { Mic, ArrowLeft, ArrowRight, Sparkles, Volume2, CheckCircle2, RotateCcw, Lock } from 'lucide-react';
 import { playPopSound, playDiscoverySound, playClickSound, speak } from '@/lib/audio-manager';
 import { logChildAttempt } from '@/lib/learning-engine';
@@ -18,6 +19,7 @@ const FABRICS: {
   name: string;
   emoji: string;
   lottiePreset: LottiePreset;
+  illustrationType: ScienceIllustrationType;
   color: string;
   superpower: string;
   termKey: string;
@@ -30,6 +32,7 @@ const FABRICS: {
     name: 'Cotton',
     emoji: '☁️',
     lottiePreset: 'plant',
+    illustrationType: 'cotton',
     color: 'bg-white',
     superpower: 'Breathable & Soft',
     termKey: 'breathable',
@@ -42,6 +45,7 @@ const FABRICS: {
     name: 'Nylon',
     emoji: '🧗',
     lottiePreset: 'rope',
+    illustrationType: 'nylon',
     color: 'bg-pip-blue-light/40',
     superpower: 'Super Strong & Elastic',
     termKey: 'tensile strength',
@@ -54,6 +58,7 @@ const FABRICS: {
     name: 'Polyester',
     emoji: '🏃',
     lottiePreset: 'jacket',
+    illustrationType: 'polyester',
     color: 'bg-factory-orange/20',
     superpower: 'Wrinkle-Resistant & Quick-Dry',
     termKey: 'wrinkle-resistant',
@@ -66,6 +71,7 @@ const FABRICS: {
     name: 'Acrylic',
     emoji: '🧶',
     lottiePreset: 'wool',
+    illustrationType: 'acrylic',
     color: 'bg-fire-red/20',
     superpower: 'Warm & Wool-Like',
     termKey: 'heat insulator',
@@ -222,12 +228,16 @@ export default function FibresMission() {
                   whileHover={{ scale: 1.04 }}
                   whileTap={{ scale: 0.96 }}
                 >
-                  <LottieAnimation
-                    preset={fabric.lottiePreset}
-                    width={72}
-                    height={72}
-                    className="mb-1"
-                  />
+                  <div className="relative flex items-center justify-center mb-1">
+                    <IllustratedScienceCard type={fabric.illustrationType} title="" size="sm" />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-85">
+                      <LottieAnimation
+                        preset={fabric.lottiePreset}
+                        width={68}
+                        height={68}
+                      />
+                    </div>
+                  </div>
                   <h3 className="font-black text-sm text-text-dark">{fabric.name}</h3>
                   <span className="text-[10px] text-pip-blue-dark font-extrabold mt-0.5">
                     {isFound ? fabric.superpower : "Tap to Discover 🔍"}

@@ -17,6 +17,7 @@ import { KidTermTooltip } from "@/components/learning/KidTermTooltip";
 import { VoiceUnlockModal } from "@/components/learning/VoiceUnlockModal";
 import { SentenceVoiceReader } from "@/components/learning/SentenceVoiceReader";
 import { LottieAnimation, LottiePreset } from "@/components/lottie/LottieAnimation";
+import { IllustratedScienceCard, ScienceIllustrationType } from "@/components/learning/IllustratedScienceCard";
 import { ArrowLeft, ArrowRight, RotateCcw, Sparkles, CheckCircle2, AlertTriangle, Lightbulb } from "lucide-react";
 
 type Phase =
@@ -34,18 +35,19 @@ type MaterialItem = {
   origin: string;
   madeFrom: string;
   lottiePreset: LottiePreset;
+  illustrationType: ScienceIllustrationType;
 };
 
 const MATERIALS: MaterialItem[] = [
-  { id: "cotton", name: "Cotton", emoji: "🌿", category: "natural", origin: "Cotton plant", madeFrom: "Plant fibres", lottiePreset: "plant" },
-  { id: "wool", name: "Wool", emoji: "🐑", category: "natural", origin: "Sheep", madeFrom: "Animal fleece", lottiePreset: "wool" },
-  { id: "silk", name: "Silk", emoji: "🐛", category: "natural", origin: "Silkworm", madeFrom: "Silkworm cocoon", lottiePreset: "silk" },
-  { id: "wood", name: "Wood", emoji: "🪵", category: "natural", origin: "Trees", madeFrom: "Tree trunk", lottiePreset: "rubber_tree" },
-  { id: "rubber_natural", name: "Natural Rubber", emoji: "🌴", category: "natural", origin: "Rubber tree", madeFrom: "Tree sap (latex)", lottiePreset: "rubber_tree" },
-  { id: "nylon", name: "Nylon", emoji: "🧵", category: "synthetic", origin: "Factory", madeFrom: "Petroleum chemicals", lottiePreset: "rope" },
-  { id: "polyester", name: "Polyester", emoji: "👔", category: "synthetic", origin: "Factory", madeFrom: "Petroleum chemicals", lottiePreset: "jacket" },
-  { id: "plastic", name: "Plastic", emoji: "🧴", category: "synthetic", origin: "Factory", madeFrom: "Petroleum polymers", lottiePreset: "bottle" },
-  { id: "acrylic", name: "Acrylic", emoji: "🧶", category: "synthetic", origin: "Factory", madeFrom: "Synthetic wool chemicals", lottiePreset: "wool" },
+  { id: "cotton", name: "Cotton", emoji: "🌿", category: "natural", origin: "Cotton plant", madeFrom: "Plant fibres", lottiePreset: "plant", illustrationType: "cotton" },
+  { id: "wool", name: "Wool", emoji: "🐑", category: "natural", origin: "Sheep", madeFrom: "Animal fleece", lottiePreset: "wool", illustrationType: "wool" },
+  { id: "silk", name: "Silk", emoji: "🐛", category: "natural", origin: "Silkworm", madeFrom: "Silkworm cocoon", lottiePreset: "silk", illustrationType: "silk" },
+  { id: "wood", name: "Wood", emoji: "🪵", category: "natural", origin: "Trees", madeFrom: "Tree trunk", lottiePreset: "rubber_tree", illustrationType: "rubber" },
+  { id: "rubber_natural", name: "Natural Rubber", emoji: "🌴", category: "natural", origin: "Rubber tree", madeFrom: "Tree sap (latex)", lottiePreset: "rubber_tree", illustrationType: "rubber" },
+  { id: "nylon", name: "Nylon", emoji: "🧵", category: "synthetic", origin: "Factory", madeFrom: "Petroleum chemicals", lottiePreset: "rope", illustrationType: "nylon" },
+  { id: "polyester", name: "Polyester", emoji: "👔", category: "synthetic", origin: "Factory", madeFrom: "Petroleum chemicals", lottiePreset: "jacket", illustrationType: "polyester" },
+  { id: "plastic", name: "Plastic", emoji: "🧴", category: "synthetic", origin: "Factory", madeFrom: "Petroleum polymers", lottiePreset: "bottle", illustrationType: "plastic" },
+  { id: "acrylic", name: "Acrylic", emoji: "🧶", category: "synthetic", origin: "Factory", madeFrom: "Synthetic wool chemicals", lottiePreset: "wool", illustrationType: "acrylic" },
 ];
 
 function shuffleMaterials(items: MaterialItem[]): MaterialItem[] {
@@ -413,12 +415,16 @@ export default function OriginsPage() {
                         whileTap={{ scale: 0.95 }}
                         layout
                       >
-                        <LottieAnimation
-                          preset={item.lottiePreset}
-                          width={58}
-                          height={58}
-                          className="mb-1"
-                        />
+                        <div className="relative flex items-center justify-center mb-1">
+                          <IllustratedScienceCard type={item.illustrationType} title="" size="sm" />
+                          <div className="absolute inset-0 flex items-center justify-center opacity-85">
+                            <LottieAnimation
+                              preset={item.lottiePreset}
+                              width={58}
+                              height={58}
+                            />
+                          </div>
+                        </div>
 
                         <span className="text-xs font-black text-text-dark text-center">
                           {item.name}
@@ -603,13 +609,15 @@ export default function OriginsPage() {
 
                 <div className="grid grid-cols-2 gap-2.5">
                   {[
-                    { name: "Cotton", preset: "plant" as LottiePreset, sub: "From cotton plant bolls" },
-                    { name: "Wool", preset: "wool" as LottiePreset, sub: "From sheep fleece" },
-                    { name: "Silk", preset: "silk" as LottiePreset, sub: "From silkworm cocoons" },
-                    { name: "Rubber", preset: "rubber_tree" as LottiePreset, sub: "From rubber tree sap" },
+                    { name: "Cotton", preset: "plant" as LottiePreset, type: "cotton" as ScienceIllustrationType, sub: "From cotton plant bolls" },
+                    { name: "Wool", preset: "wool" as LottiePreset, type: "wool" as ScienceIllustrationType, sub: "From sheep fleece" },
+                    { name: "Silk", preset: "silk" as LottiePreset, type: "silk" as ScienceIllustrationType, sub: "From silkworm cocoons" },
+                    { name: "Rubber", preset: "rubber_tree" as LottiePreset, type: "rubber" as ScienceIllustrationType, sub: "From rubber tree sap" },
                   ].map((item) => (
                     <div key={item.name} className="bg-white p-3 rounded-2xl border border-emerald-200 text-center flex flex-col items-center">
-                      <LottieAnimation preset={item.preset} width={50} height={50} className="mb-1" />
+                      <div className="relative flex items-center justify-center mb-1">
+                        <IllustratedScienceCard type={item.type} title="" size="sm" />
+                      </div>
                       <span className="text-xs font-black text-emerald-950">{item.name}</span>
                       <span className="text-[9px] text-text-muted">{item.sub}</span>
                     </div>
@@ -631,13 +639,15 @@ export default function OriginsPage() {
 
                 <div className="grid grid-cols-2 gap-2.5">
                   {[
-                    { name: "Nylon", preset: "rope" as LottiePreset, sub: "Stronger than steel" },
-                    { name: "Polyester", preset: "jacket" as LottiePreset, sub: "Wrinkle-free & quick-dry" },
-                    { name: "Plastic", preset: "bottle" as LottiePreset, sub: "Insulator & lightweight" },
-                    { name: "Acrylic", preset: "wool" as LottiePreset, sub: "Man-made warm wool" },
+                    { name: "Nylon", preset: "rope" as LottiePreset, type: "nylon" as ScienceIllustrationType, sub: "Stronger than steel" },
+                    { name: "Polyester", preset: "jacket" as LottiePreset, type: "polyester" as ScienceIllustrationType, sub: "Wrinkle-free & quick-dry" },
+                    { name: "Plastic", preset: "bottle" as LottiePreset, type: "plastic" as ScienceIllustrationType, sub: "Insulator & lightweight" },
+                    { name: "Acrylic", preset: "wool" as LottiePreset, type: "acrylic" as ScienceIllustrationType, sub: "Man-made warm wool" },
                   ].map((item) => (
                     <div key={item.name} className="bg-white p-3 rounded-2xl border border-blue-200 text-center flex flex-col items-center">
-                      <LottieAnimation preset={item.preset} width={50} height={50} className="mb-1" />
+                      <div className="relative flex items-center justify-center mb-1">
+                        <IllustratedScienceCard type={item.type} title="" size="sm" />
+                      </div>
                       <span className="text-xs font-black text-blue-950">{item.name}</span>
                       <span className="text-[9px] text-text-muted">{item.sub}</span>
                     </div>
